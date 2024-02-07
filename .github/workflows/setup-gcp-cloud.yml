@@ -64,6 +64,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Pre Setup
       run: |
@@ -95,6 +97,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Pre Setup
       run: |
@@ -129,6 +133,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Pre Setup
       run: |
@@ -176,6 +182,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Pre Setup
       run: |
