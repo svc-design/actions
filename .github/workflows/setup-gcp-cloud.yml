@@ -5,6 +5,10 @@ env:
 
 on:
   workflow_call:
+    inputs:
+      config:
+        required: true
+        type: string
     secrets:
       SSH_PUBLIC_KEY:
         required: true
@@ -53,7 +57,8 @@ jobs:
             echo "Bucket ${BUCKET_NAME} exists."
         else
             echo "Bucket ${BUCKET_NAME} does not exist."
-            bash run_terraform.sh
+            python3 scripts/init.py -c '${{ inputs.config }}'
+            bash scripts/run_terraform.sh
         fi
       working-directory: iac_modules/terraform/gcp/gcs/
   network:
@@ -85,7 +90,8 @@ jobs:
 
     - name: Terraform Init And Apply
       run: |
-        bash run_terraform.sh
+        python3 scripts/init.py -c '${{ inputs.config }}'
+        bash scripts/run_terraform.sh
       working-directory: iac_modules/terraform/gcp/network/
   vhost:
     runs-on: ubuntu-latest
@@ -122,7 +128,8 @@ jobs:
 
     - name: Terraform Init And Apply
       run: |
-        python3 scripts/init.py && bash scripts/run_terraform.sh
+        python3 scripts/init.py -c '${{ inputs.config }}'
+        bash scripts/run_terraform.sh
       working-directory: iac_modules/terraform/gcp/vhost/
 
   key_pair:
@@ -170,7 +177,8 @@ jobs:
     - name: Terraform Init And Apply
       if: steps.check_ssh_metadata.outputs.ssh_metadata_exists == 'false'
       run: |
-        python3 scripts/init.py && bash scripts/run_terraform.sh
+        python3 scripts/init.py -c '${{ inputs.config }}'
+        bash scripts/run_terraform.sh
       working-directory: iac_modules/terraform/gcp/key_pair/
 
   firewall:
@@ -203,5 +211,6 @@ jobs:
 
     - name: Terraform Init And Apply
       run: |
-        python3 scripts/init.py && bash scripts/run_terraform.sh
+        python3 scripts/init.py -c '${{ inputs.config }}'
+        bash scripts/run_terraform.sh
       working-directory: iac_modules/terraform/gcp/firewall/
