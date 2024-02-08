@@ -166,7 +166,7 @@ jobs:
 
     - name: Check if SSH Metadata exists
       id: check_ssh_metadata
-      run: bash scripts/check_ssh_metadata.sh
+      run: bash scripts/check_ssh_metadata.sh '${{ inputs.config }}'
       working-directory: iac_modules/terraform/gcp/key_pair/
 
     - name: Fetch SSH Keys
