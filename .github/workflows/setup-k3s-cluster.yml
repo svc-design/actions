@@ -69,7 +69,7 @@ jobs:
 
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
-          if [[ -n "${{ inputs.ssh_host_ip }}" ]]; then
+          if [[ ! -n "${{ inputs.ssh_host_ip }}" ]]; then
             python3 scripts/init.py && terraform init
             terraform output -raw ${{ inputs.ssh_host_name }}
             echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
