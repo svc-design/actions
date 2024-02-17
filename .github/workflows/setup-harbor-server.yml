@@ -1,4 +1,4 @@
-name: Workflow Call Setup Observability Server
+name: Workflow Call Setup Harbor Server
 on:
   workflow_call:
     inputs:
@@ -27,7 +27,7 @@ on:
         required: true
 
 jobs:
-  init-observability-server:
+  init-harbor-server:
     runs-on: ubuntu-latest
     env:
       DOMAIN: ${{ inputs.domain }}
