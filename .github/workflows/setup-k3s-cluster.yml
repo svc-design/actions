@@ -8,6 +8,9 @@ on:
       cluster_name:
         required: true
         type: string
+      ssh_host_ip:
+        required: false
+        type: string
       ssh_host_name:
         required: true
         type: string
@@ -66,9 +69,13 @@ jobs:
 
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
-          python3 scripts/init.py && terraform init
-          terraform output -raw ${{ inputs.ssh_host_name }}
-          echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
+          if [[ -z ${{ inputs.ssh_host_ip }} ]]; then
+            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }} 2>/dev/null)" >> $GITHUB_ENV
+          else
+            python3 scripts/init.py && terraform init
+            terraform output -raw ${{ inputs.ssh_host_name }}
+            echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
+          fi
         shell: bash
         working-directory: iac_modules/terraform/gcp/vhost/
 
