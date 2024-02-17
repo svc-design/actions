@@ -74,7 +74,7 @@ jobs:
             terraform output -raw ${{ inputs.ssh_host_name }}
             echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
           else
-            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }} 2>/dev/null)" >> $GITHUB_ENV
+            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
           fi
         shell: bash
         working-directory: iac_modules/terraform/gcp/vhost/
