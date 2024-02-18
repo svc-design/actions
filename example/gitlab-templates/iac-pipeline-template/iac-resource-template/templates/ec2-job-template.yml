@@ -1,0 +1,44 @@
+ec2-dry-run-job:
+  stage: plan
+  script:
+    - make -C ec2 plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+ec2-apply-job:
+  stage: apply
+  script:
+    - make -C ec2 apply
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+
+ec2-output-job:
+  stage: apply
+  script:
+    - make -C ec2 output
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: ec2/build.env
+
+ec2-destroy-job:
+  stage: apply
+  script:
+    - make -C ec2 destroy
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      when: always
+  when: manual

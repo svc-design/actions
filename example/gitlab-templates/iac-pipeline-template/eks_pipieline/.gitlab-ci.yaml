@@ -1,0 +1,27 @@
+include:
+  - local: 'templates/base-template.yml'
+  - template: 'templates/ec2-job-template.yml'
+
+variables:
+  k8s_version: '1.25'
+  cluster_name: 
+  k8s_labels:
+    workload: service
+  service_nodegroup_type: t3.nano
+  scaling_config:
+    desired_size: 1
+    max_size: 2
+    min_size: 1
+  tags:
+    owner: 
+    project: 
+    allocation: 
+    requestor: 
+  region: cn-north-1
+  az:
+    - cn-north-1a
+    - cn-north-1b
+  env: dev
+  account_name: 
+  account_id: 
+

@@ -1,0 +1,36 @@
+iam-dry-run-job:
+  stage: plan
+  script:
+    - make -C iam-user plan
+    - make -C iam-group-with-policies plan
+    - make -C iam-assumable-role plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+iam-apply-job:
+  stage: apply
+  script:
+    - make -C iam-user apply
+    - make -C iam-group-with-policies apply
+    - make -C iam-assumable-role apply
+    - make -C iam-user output
+    - make -C iam-group-with-policies output
+    - make -C iam-assumable-role output
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs:
+    - config-apply-job
+  dependencies:
+    - config-apply-job
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: 
+        - iam-user/build.env
+        - iam-group-with-policies/build.env
+        - iam-assumable-role/build.env

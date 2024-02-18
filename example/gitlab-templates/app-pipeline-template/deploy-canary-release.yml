@@ -1,0 +1,8 @@
+canary-test-and-release-job:
+  stage: deploy
+  script:
+    - make canary
+  needs:
+    - deploy-primary-job
+  dependencies:
+    - deploy-primary-job

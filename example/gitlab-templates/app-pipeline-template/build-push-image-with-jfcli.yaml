@@ -1,0 +1,45 @@
+prod-image-with-jfcli:
+  stage: build
+  tags:
+    - shared
+    - shell
+  script:
+    - sh scripts/root_jf_push.sh prd ${tag}
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+#sgp-dev-image-with-jfcli:
+#  stage: build
+#  tags:
+#    - gischina
+#    - cloud
+#  script:
+#    - sh scripts/sudo_jf_push.sh dev ${tag}
+#  rules:
+#    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+cn-dev-image-with-jfcli:
+  stage: build
+  tags:
+    - shared
+    - shell
+  script:
+    - sh scripts/root_jf_push.sh dev ${tag}
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+pre-cleanup:
+  stage: pre
+  tags:
+    - shared
+    - shell
+  script:
+    - docker rmi -f ${CI_PROJECT_NAME}:${TAG} || echo true
+
+post-cleanup:
+  stage: post
+  tags:
+    - shared
+    - shell
+  script:
+    - docker rmi -f ${CI_PROJECT_NAME}:${TAG} || echo true 

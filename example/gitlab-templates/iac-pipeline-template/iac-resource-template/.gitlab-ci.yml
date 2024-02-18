@@ -1,0 +1,59 @@
+#include: 
+#  - local: 'templates/base-template.yml'
+#  - template: 'templates/ec2-job-template.yml'
+#  - template: 'templates/alb-job-template.yml'
+#  - template: 'templates/nlb-job-template.yml'
+#  - template: 'templates/rds-job-template.yml'
+#  - template: 'templates/s3-job-template.yml'
+#
+#variables:
+#  VAULT_PATH: aws
+#  VAULT_SECRET: aws 
+#  TF_STATE_KEY: test
+#  TF_STATE_S3: devops-velero
+#
+#  env: Dev
+#  region: cn-northwest-1
+#  az: cn-northwest-1a
+#  application: TF
+#  businessunit: 
+#  appowner: "
+#  email: "
+#
+#  #EC2 config
+#  ami: 'ami-00a7184804eb656c5'
+#  instance_type: "t2.micro"
+#  iam_role_name: admin
+#  vpc_id: 'vpc-0f45a34e538d3bee2'
+#  subnet_web_ids: "subnet-06500e0528acdd626,subnet-0a9566012c80f0ea7"
+#  subnet_dbs_ids: "subnet-0e9f1a3e820842363,subnet-0829b5e52eea8d557"
+#  security_group_api_id: sg-0994207bfeb5d4494
+#  security_group_web_id: sg-08987f565bce14c0c
+#
+#  #ALB config
+#  vpc_id: vpc-0f45a34e538d3bee2
+#  subnet_web_ids: "subnet-06500e0528acdd626,subnet-0a9566012c80f0ea7"
+#  lb_security_groups: "sg-05738d66c0abfa514,sg-05802ef761cd8e0a3,sg-0a7667a8b2916b675"
+#  lb_ports: "80,81"
+#  target_id: "vpc-0f45a34e538d3bee2"
+#  target_port: "80"
+#
+#
+#  # NLB config
+#  vpc_id: vpc-0f45a34e538d3bee2
+#  subnet_web_ids: "subnet-06500e0528acdd626,subnet-0a9566012c80f0ea7"
+#  lb_ports: "80,81"
+#  target_id: "vpc-0f45a34e538d3bee2"
+#  target_port: "80"
+#
+#  # RDS config
+#  iam_role_name: admin
+#  vpc_id: 'vpc-0f45a34e538d3bee2'
+#  subnet_web_ids: "subnet-06500e0528acdd626,subnet-0a9566012c80f0ea7"
+#  subnet_dbs_ids: "subnet-0e9f1a3e820842363,subnet-0829b5e52eea8d557"
+#  security_group_api_id: sg-0994207bfeb5d4494
+#  security_group_web_id: sg-08987f565bce14c0c
+#  security_group_dbs_mssql_id: sg-02efded30a5647376
+#  security_group_dbs_mysql_id: sg-06528b51813f4fd40
+#
+#  # S3 no custom config

@@ -1,0 +1,44 @@
+rds-dry-run-job:
+  stage: plan
+  script:
+    - make -C rds plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+rds-apply-job:
+  stage: apply
+  script:
+    - make -C rds apply
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+
+rds-output-job:
+  stage: apply
+  script:
+    - make -C rds output
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: rds/build.env
+
+rds-destroy-job:
+  stage: apply
+  script:
+    - make -C rds destroy
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      when: always
+  when: manual

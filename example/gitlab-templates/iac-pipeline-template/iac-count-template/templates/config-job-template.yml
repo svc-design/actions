@@ -1,0 +1,23 @@
+config-dry-run-job:
+  stage: plan
+  script:
+    - make -C config plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+config-apply-job:
+  stage: apply
+  script:
+    - make -C config apply
+    - make -C config output
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: config/build.env

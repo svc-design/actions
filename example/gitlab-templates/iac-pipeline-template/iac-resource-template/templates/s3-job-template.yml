@@ -1,0 +1,44 @@
+s3-dry-run-job:
+  stage: plan
+  script:
+    - make -C s3 plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+s3-apply-job:
+  stage: apply
+  script:
+    - make -C s3 apply
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+
+s3-output-job:
+  stage: apply
+  script:
+    - make -C s3 output
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: s3/build.env
+
+s3-destroy-job:
+  stage: applys
+  script:
+    - make -C s3 destroy
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      when: always
+  when: manual

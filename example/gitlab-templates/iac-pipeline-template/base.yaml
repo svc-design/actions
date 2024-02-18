@@ -1,0 +1,7 @@
+#image:
+#  name: artifact.onwalk.net/devops/image-builder-alpine:20230301-1 
+#  entrypoint: [""]
+stages:
+  - pre
+  - build
+  - post

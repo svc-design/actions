@@ -1,0 +1,14 @@
+network-destroy-job:
+  stage: destroy
+  script:
+    - make -C network destroy
+  needs:
+    - network-apply-job
+  dependencies:
+    - network-apply-job
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

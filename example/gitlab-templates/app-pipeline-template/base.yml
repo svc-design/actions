@@ -1,0 +1,11 @@
+image:
+  name: artifact.onwalk.net/devops/ci-runner-alpine:latest 
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
+stages:
+  - check
+  - init
+  - build
+  - deploy

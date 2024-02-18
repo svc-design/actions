@@ -1,0 +1,50 @@
+@Library('pipeline-library') _
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ENV', choices: ['dev', 'sit', 'uat', 'prod'], description: 'Select deployment environment')
+        choice(name: 'STATUS', choices: ['build', 'test', 'deploy', 'upgrade', 'backup', 'rollback', 'destroy', 'release'], description: 'Select operation status')
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    echo "Execution environment: ${params.ENV}, Operation status: ${params.STATUS}"
+                }
+            }
+        }
+
+        stage('Operation') {
+            steps {
+                script {
+                    // 根据STATUS参数调用共享库中定义的方法
+                    switch(params.STATUS) {
+                        case 'build':
+                            pipelineSteps.build()
+                            break
+                        case 'test':
+                            pipelineSteps.test()
+                            break
+                        case 'deploy':
+                            pipelineSteps.deploy(params.ENV)
+                            break
+                        case 'release':
+                            pipelineSteps.release(params.ENV)
+                            break
+                        // 添加其他状态的处理逻辑
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+    }
+}
+

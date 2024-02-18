@@ -1,0 +1,4 @@
+static-check-job:
+  stage: check
+  script:
+    - gitleaks protect -v

@@ -1,0 +1,20 @@
+security-group-destroy-job:
+  stage: destroy
+  script:
+    - make -C security_group destroy
+  retry:
+    max: 2
+    when: script_failure
+  needs:
+    - config-apply-job
+    - iam-apply-job
+    - network-apply-job
+    - cloudtrail-apply-job
+  dependencies:
+    - config-apply-job
+    - iam-apply-job
+    - network-apply-job
+    - cloudtrail-apply-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

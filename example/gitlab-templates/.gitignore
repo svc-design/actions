@@ -1,0 +1,9 @@
+.test*.sh
+files/hosts
+files/id_rsa
+files/nginx-ingress-values.yaml
+files/podinfo-canary.yaml
+files/podinfo-ingress.yaml
+files/podinfo-svc.yaml
+files/update-canary-version.sh
+files/external-dns-values.yaml

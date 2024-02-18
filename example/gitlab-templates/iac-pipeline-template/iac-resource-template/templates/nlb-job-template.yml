@@ -1,0 +1,44 @@
+nlb-dry-run-job:
+  stage: plan
+  script:
+    - make -C nlb plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+nlb-apply-job:
+  stage: apply
+  script:
+    - make -C nlb apply
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+
+nlb-output-job:
+  stage: apply
+  script:
+    - make -C nlb output
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: nlb/build.env
+
+nlb-destroy-job:
+  stage: apply
+  script:
+    - make -C nlb destroy
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      when: always
+  when: manual

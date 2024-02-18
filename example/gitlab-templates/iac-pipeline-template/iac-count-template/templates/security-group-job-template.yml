@@ -1,0 +1,33 @@
+security-group-dry-run-job:
+  stage: plan
+  script:
+    - make -C security_group plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+security-group-apply-job:
+  stage: apply
+  script:
+    - make -C security_group apply
+    - make -C security_group output
+  retry:
+    max: 2
+    when: script_failure
+  needs:
+    - config-apply-job
+    - iam-apply-job
+    - network-apply-job
+    - cloudtrail-apply-job
+  dependencies:
+    - config-apply-job
+    - iam-apply-job
+    - network-apply-job
+    - cloudtrail-apply-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  artifacts:
+    reports:
+      dotenv: security-group/build.env

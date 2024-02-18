@@ -1,0 +1,21 @@
+include:
+  - local: 'gitlab-templates/base.yml'
+  - local: 'gitlab-templates/check.yml'
+  - local: 'gitlab-templates/init.yml'
+  - local: 'gitlab-templates/build.yml'
+  - local: 'gitlab-templates/deploy-primary-release.yml'
+  - local: 'gitlab-templates/deploy-canary-release.yml'
+
+variables:
+  env: prod
+  public_ip: '18.163.197.2'
+  private_ip: '10.0.0.121'
+  ssh_port: 22
+  user: ubuntu
+  domain: onwalk.net
+  primary_version: 6.2.0
+  canary_version: 6.4.5
+
+  region: ap-east-1
+  aws_log_group_name: 'k3s_cluster'
+  aws_log_stream_name: 'podinfo'

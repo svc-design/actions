@@ -1,0 +1,122 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ENV', choices: ['dev', 'sit', 'uat', 'prod'], description: 'Select deployment environment')
+        choice(name: 'STATUS', choices: ['build', 'test', 'deploy', 'upgrade', 'backup', 'rollback', 'destroy', 'release'], description: 'Select operation status')
+    }
+
+    environment {
+        APP_NAME = 'yourAppName'
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    echo "Execution environment: ${params.ENV}, Operation status: ${params.STATUS}"
+                }
+            }
+        }
+
+        stage('Build') {
+            when {
+                expression { params.STATUS == 'build' }
+            }
+            steps {
+                script {
+                    sh 'mvn clean package'
+                }
+            }
+        }
+
+        stage('Test') {
+            when {
+                expression { params.STATUS == 'test' }
+            }
+            steps {
+                script {
+                    sh 'mvn test'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression { params.STATUS == 'deploy' }
+            }
+            steps {
+                script {
+                    echo "Deploying to ${params.ENV} environment"
+                    // Use ENV to select deployment script or command
+                }
+            }
+        }
+
+        stage('Upgrade') {
+            when {
+                expression { params.STATUS == 'upgrade' }
+            }
+            steps {
+                script {
+                    echo "Upgrading in ${params.ENV} environment"
+                    // Implement upgrade logic
+                }
+            }
+        }
+
+        stage('Backup') {
+            when {
+                expression { params.STATUS == 'backup' }
+            }
+            steps {
+                script {
+                    echo "Backing up in ${params.ENV} environment"
+                    // Implement backup logic
+                }
+            }
+        }
+
+        stage('Rollback') {
+            when {
+                expression { params.STATUS == 'rollback' }
+            }
+            steps {
+                script {
+                    echo "Rolling back in ${params.ENV} environment"
+                    // Implement rollback logic
+                }
+            }
+        }
+
+        stage('Destroy') {
+            when {
+                expression { params.STATUS == 'destroy' }
+            }
+            steps {
+                script {
+                    echo "Destroying in ${params.ENV} environment"
+                    // Implement destroy logic
+                }
+            }
+        }
+
+        stage('Release') {
+            when {
+                expression { params.STATUS == 'release' }
+            }
+            steps {
+                script {
+                    echo "Releasing version in ${params.ENV} environment"
+                    // Implement release logic, such as tagging a release, generating release notes, etc.
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+    }
+}

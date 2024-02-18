@@ -1,0 +1,196 @@
+pipeline {
+  agent {
+     /*
+      * Nodes that are configured for Linode are tagged as "lke". We install the doctl utility as part
+      * of this pipeline, which does require that the Jenkins Agent has the snap store installed. This has been
+      * tested on Ubuntu 20.04. Be sure to check that your Agent has the necessary components installed if you
+      * are using a different OS.
+      */
+     node {
+        label 'lke'
+        }
+  }
+
+ /*
+  * The Linode token is passed into the process via a credential in Jenkins. If this is not found the
+  * process will fail out.
+  */
+
+ environment {
+        LINODE_TOKEN           = credentials('LINODE_TOKEN')
+        NO_COLOR               = "TRUE"
+        PULUMI_ACCESS_TOKEN    = credentials('PULUMI_ACCESS_TOKEN')
+        MARA_PASSWORD          = credentials('MARA_PASSWORD')
+
+    }
+  stages {
+
+    /*
+     * This logic allows any branch to be checked out and built, and is designed to be triggered by a github
+     * webhook. If desired, you can change the branch specification to force the process to only build from a specific
+     * branch.
+     *
+     * Note that we also init the submodule(s).
+     */
+
+    stage('Checkout Scm') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CheckoutOption'],
+        [$class: 'CloneOption', noTags: false, reference: '', shallow: false],
+        [$class: 'SubmoduleOption', disableSubmodules: false, parentCredentials: false,
+        recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
+        userRemoteConfigs: [[url: 'https://github.com/nginxinc/kic-reference-architectures']]])
+      }
+    }
+
+    stage('Prepping OS') {
+      steps {
+
+        /*
+         * This step handles ensuring the OS has the necessary tooling to build the project. This process has been
+         * built for Ubuntu 20.04 and assumes you have the snap store installed. It also assumes that you are running
+         * with an account that has access to passwordless sudo.
+         *
+         * We also make a few opinionated decisions, such as making sure we are always running on the latest set of
+         * packages for our Jenkins Agent.
+         *
+         * This should work on other Ubuntu related distributions, but most certainly will not work on RHEL or friends.
+         */
+
+          sh '''
+            # Update catalogs
+            apt update
+            # Upgrade everything; we always run with latest patches.
+            DEBIAN_FRONTEND=noninteractive apt -y upgrade
+            # Make sure our deps are installed
+            DEBIAN_FRONTEND=noninteractive apt -y install figlet openjdk-11-jdk make docker.io
+            # Create the directory for the kubeconfig
+            mkdir -p $HOME/.kube || true
+            chmod 777 $HOME/.kube || true
+             '''
+      }
+    }
+
+    stage('Cleaning Up') {
+      steps {
+
+        /*
+         * This is currently empty since we are building a new executor for each run. However, maintaining
+         * here for anyone who wants to add cleanup steps for their environment
+         *
+         * Other cleanup related functions can be placed here as well.
+         */
+
+        sh '''
+          # Just return...
+          true
+           '''
+
+      }
+    }
+
+    stage('Create VENV') {
+      steps {
+
+        /*
+         * Create our virtual environment.
+         */
+
+        sh '''
+          $WORKSPACE/bin/setup_venv.sh
+           '''
+
+      }
+    }
+
+    stage('Configure Pulumi') {
+      steps {
+
+        /*
+         * This logic sets the necessary variables in the configuration files; this differs from the manual procedure
+         * where we prompt the user for a number of these required variables. This same approach can be used as part
+         * of the manual deployment if required.
+         *
+         * This will likely evolve further as the project does, and we may reach a point where these defaults are assumed
+         * for a given development type.  kubernetes:cluster_name
+         */
+
+        sh '''
+          echo "PULUMI_STACK=marajenklke${BUILD_NUMBER}" > $WORKSPACE/config/pulumi/environment
+          echo "LINODE_TOKEN=${LINODE_TOKEN}" >> $WORKSPACE/config/pulumi/environment
+          $WORKSPACE/pulumi/python/venv/bin/pulumi stack select --create marajenklke${BUILD_NUMBER} -C pulumi/python/config
+          $WORKSPACE/pulumi/python/venv/bin/pulumi stack select --create marajenklke${BUILD_NUMBER} -C pulumi/python/kubernetes/secrets
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set certmgr:helm_timeout "600" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set kic-helm:fqdn "marajenks${BUILD_NUMBER}.zathras.io" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set kic-helm:helm_timeout "600" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:kubeconfig "$HOME/.kube/config" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:infra_type "lke" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:cluster_name "marajenklke${BUILD_NUMBER}" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set logagent:helm_timeout "600" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set logstore:helm_timeout "600" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set prometheus:helm_timeout "600" -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:harbor_db_password "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:harbor_password "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:harbor_sudo_user_password "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set prometheus:adminpass "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:accounts_pwd "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:demo_login_pwd "password" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:demo_login_user "testuser" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:ledger_pwd "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:instance_type "g6-standard-8" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:k8s_ha "true" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:k8s_version "1.23" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:node_count "3" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:region "us-central" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:soa_email "qdzlug@gmail.com" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+          $WORKSPACE/pulumi/python/venv/bin/pulumi config set linode:token "${LINODE_TOKEN}" --plaintext -C pulumi/python/config -s marajenklke${BUILD_NUMBER}
+           '''
+
+      }
+    }
+
+    stage('Deploying Pulumi') {
+      steps {
+
+        sh '''
+          $WORKSPACE/pulumi/python/runner -p linode -s marajenklke${BUILD_NUMBER}  up
+           '''
+      }
+    }
+
+    stage('Resetting Environment') {
+      steps {
+
+        /*
+         * Clean up the environment; this includes running the destroy script to remove our pulumi resources and
+         * destroy the deployed infrastructure in Linode.
+         *
+         * After that completes, we remove the pulumi stack from the project with the find command; this is because
+         * we need to delete the stack in each project it's been instantiated in.
+         */
+
+        sh '''
+          $WORKSPACE/pulumi/python/runner -p linode -s marajenklke${BUILD_NUMBER} destroy
+          find $WORKSPACE -mindepth 2 -maxdepth 6 -type f -name Pulumi.yaml -execdir pulumi stack rm marajenklke${BUILD_NUMBER} --force --yes \\;
+           '''
+      }
+         }
+
+  }
+  post {
+    failure {
+
+          /*
+           * On failure we still need to remove the partial build; however, we want to make sure we exit with a zero
+           * status so we can move on to the next step. Hence the "or true" logic below.W
+           */
+
+          sh '''
+            # Destroy our partial build...
+            $WORKSPACE/pulumi/python/runner -p linode -s marajenklke${BUILD_NUMBER} destroy || true
+            # Clean up the Pulumi stack
+            find  $WORKSPACE -mindepth 2 -maxdepth 7 -type f -name Pulumi.yaml -execdir $WORKSPACE/pulumi/python/venv/bin/pulumi stack rm marajenklke${BUILD_NUMBER}  --force --yes  \\;
+             '''
+    }
+   }
+  }

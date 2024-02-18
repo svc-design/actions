@@ -1,0 +1,10 @@
+deploy-primary-job:
+  stage: deploy
+  script:
+    - make deploy
+  needs:
+    - build-chart-job
+    - build-image-job
+  dependencies:
+    - build-chart-job
+    - build-image-job

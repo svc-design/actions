@@ -1,0 +1,27 @@
+network-dry-run-job:
+  stage: plan
+  script:
+    - make -C network plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+network-apply-job:
+  stage: apply
+  script:
+    - make -C network apply
+    - make -C network apply
+  needs:
+    - config-apply-job
+  dependencies:
+    - config-apply-job
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  artifacts:
+    reports:
+      dotenv: network/build.env

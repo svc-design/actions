@@ -1,0 +1,4 @@
+init-jobs:
+  stage: init
+  script:
+    - bash -c 'make init-k3s'

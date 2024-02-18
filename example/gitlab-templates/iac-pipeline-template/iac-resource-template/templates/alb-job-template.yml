@@ -1,0 +1,44 @@
+alb-dry-run-job:
+  stage: plan
+  script:
+    - make -C alb plan
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+alb-apply-job:
+  stage: apply
+  script:
+    - make -C alb apply
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+
+alb-output-job:
+  stage: apply
+  script:
+    - make -C alb output
+  rules:
+    if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry:
+    max: 2
+    when: script_failure
+  artifacts:
+    reports:
+      dotenv: alb/build.env
+
+alb-destroy-job:
+  stage: apply
+  script:
+    - make -C alb destroy
+  retry:
+    max: 2
+    when: script_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      when: always
+  when: manual

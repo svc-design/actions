@@ -1,0 +1,24 @@
+image:
+  name: artifact.onwalk.net/devops/iac-runner:latest
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  before_script:
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.onwalk.net/".insteadOf "https://gitlab.onwalk.net/"
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/ec2
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/alb
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/nlb
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/rds
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/s3
+
+stages:
+  - check
+  - test
+  - plan
+  - apply
+
+check-job:
+  stage: check
+  script:
+    - terraform validate
+    - gitleaks protect -v

@@ -1,0 +1,236 @@
+pipeline {
+  agent {
+     /*
+      * Nodes that are configured for minkube are tagged as "minikube". Unlike the deployment to cloud providers, this logic
+      * will install minikube on the Jenkins Agent. This means that the agent should have sufficient resources available
+      * to run minikube. A minimum of 16GB RAM, 2 vCPU, and 20GB of disk is recommended. Testing is done with 20GB of RAM,
+      * 4 vCPU, and 64GB of disk.
+      *
+      * This has been * tested on Ubuntu 20.04. Be sure to check that your Agent has the necessary components installed
+      * if you are using a different OS.
+      */
+     node {
+        label 'minikube'
+        }
+  }
+
+  /*
+   * The JWT for using NGINX Plus is passed in via a variable; if the JWT is not found the process will deploy the
+   * open source IC.
+   */
+
+ environment {
+        NGINX_JWT               = credentials('NGINX_JWT')
+        NO_COLOR                = "TRUE"
+        PULUMI_ACCESS_TOKEN     = credentials('PULUMI_ACCESS_TOKEN')
+        MARA_PASSWORD           = credentials('MARA_PASSWORD')
+
+    }
+
+  stages {
+
+    /*
+     * This logic allows any branch to be checked out and built, and is designed to be triggered by a github
+     * webhook. If desired, you can change the branch specification to force the process to only build from a specific
+     * branch.
+     *
+     * Note that we also init the submodule(s).
+     */
+
+    stage('Checkout Scm') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CheckoutOption'],
+        [$class: 'CloneOption', noTags: false, reference: '', shallow: false],
+        [$class: 'SubmoduleOption', disableSubmodules: false, parentCredentials: false,
+        recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
+        userRemoteConfigs: [[url: 'https://github.com/nginxinc/kic-reference-architectures']]])
+      }
+    }
+
+    stage('Prepping OS') {
+
+        /*
+         * This step handles ensuring the OS has the necessary tooling to build the project. This process has been
+         * built for Ubuntu 20.04. It assumes that you are running  with an account that has access to passwordless sudo.
+         *
+         * We also make a few opinionated decisions, such as making sure we are always running on the latest set of
+         * packages for our Jenkins Agent.
+         *
+         * This should work on other Ubuntu related distributions, but most certainly will not work on RHEL or friends.
+         */
+
+      steps {
+          sh '''
+            # Update catalogs
+            apt update
+            # Upgrade everything; we always run with latest patches.
+            DEBIAN_FRONTEND=noninteractive apt -y upgrade
+            # Make sure our deps are installed
+            DEBIAN_FRONTEND=noninteractive apt -y install figlet openjdk-11-jdk make docker.io conntrack expect
+            # Make sure our kubeconfig dir exists…
+            mkdir $HOME/.kube || true
+             '''
+      }
+    }
+
+    stage('Cleaning Up') {
+      steps {
+
+        /*
+         * This is currently empty since we are building a new executor for each run. However, maintaining
+         * here for anyone who wants to add cleanup steps for their environment
+         *
+         * Other cleanup related functions can be placed here as well.
+         */
+
+        sh '''
+          # Just return...
+          true
+           '''
+       }
+    }
+
+    stage('Minikube Setup') {
+
+        /*
+         * This step installs minikube. This assumes you have the snap store installed and configured properly. Note that
+         * the snap store will always pull the latest version of the software so you may end up with a deployment that
+         * does not work as expected; if this happens please check back with the github repository and verify the known
+         * working configurations.
+         */
+
+      steps {
+          sh '''
+            apt-get install curl wget gnupg2 -y
+            curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64  && chmod +x minikube
+            mkdir -p /usr/local/bin/
+            install minikube /usr/local/bin/
+            minikube start --vm-driver=docker --force --cpus 4 --memory 30000 --kubernetes-version=v1.23.9
+            '''
+      }
+    }
+
+    stage('Configure Minikube') {
+      steps {
+
+        /*
+         * This step configures Minikube for use with kubectl; we just make sure that the jenkins user has access to the
+         * configuration.
+         */
+
+          sh '''
+          expect << _EOF_
+          spawn minikube addons configure metallb
+          expect "Enter Load Balancer Start IP:" { send "192.168.100.105\\r" }
+          expect "Enter Load Balancer End IP:" { send "192.168.100.120\\r" }
+          expect eof
+_EOF_
+            '''
+      }
+    }
+
+    stage('Create VENV') {
+      steps {
+
+        /*
+         * Create our virtual environment.
+         */
+
+          sh '''
+            $WORKSPACE/bin/setup_venv.sh
+            '''
+      }
+    }
+
+    stage('Configure Pulumi') {
+      steps {
+
+        /*
+         * This logic sets the necessary variables in the configuration files; this differs from the manual procedure
+         * where we prompt the user for a number of these required variables. This same approach can be used as part
+         * of the manual deployment if required.
+         *
+         * This will likely evolve further as the project does, and we may reach a point where these defaults are assumed
+         * for a given development type.
+         */
+
+          sh '''
+            echo "PULUMI_STACK=marajenkmkube${BUILD_NUMBER}" > $WORKSPACE/config/pulumi/environment
+            $WORKSPACE/pulumi/python/venv/bin/pulumi stack select --create marajenkmkube${BUILD_NUMBER} -C pulumi/python/config
+            $WORKSPACE/pulumi/python/venv/bin/pulumi stack select --create marajenkmkube${BUILD_NUMBER} -C pulumi/python/kubernetes/secrets
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set certmgr:helm_timeout "600" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kic-helm:helm_timeout "600" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:kubeconfig "$HOME/.kube/config" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set logagent:helm_timeout "600" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set logstore:helm_timeout "600" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set prometheus:helm_timeout "600" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kic-helm:fqdn "marajenkmkube${BUILD_NUMBER}.zathras.io" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:cluster_name "microk8s-cluster" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:infra_type "kubeconfig" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set kubernetes:kubeconfig "$HOME/.kube/config" -C pulumi/python/config -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set prometheus:adminpass "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:accounts_pwd "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:demo_login_pwd "password" --secret -C pulumi/python/kubernetes/secrets -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:demo_login_user "testuser" --secret -C pulumi/python/kubernetes/secrets -s marajenkmkube${BUILD_NUMBER}
+            $WORKSPACE/pulumi/python/venv/bin/pulumi config set sirius:ledger_pwd "${MARA_PASSWORD}" --secret -C pulumi/python/kubernetes/secrets -s marajenkmkube${BUILD_NUMBER}
+
+            '''
+      }
+    }
+
+    stage('Pulumi Deployment') {
+
+        /*
+         * This step echoes the JWT into the correct file for the startup to find it and then calls the script to build
+         * the MARA deployment in minikube
+         */
+
+      steps {
+          sh '''
+            echo $NGINX_JWT > $WORKSPACE/extras/jwt.token
+            $WORKSPACE/bin/start_kube.sh
+            '''
+      }
+    }
+
+    stage('Reset Environment') {
+
+        /*
+         * Clean up the environment; this includes running the destroy script to remove our pulumi resources and
+         * destroy the deployed minikube installation.
+         *
+         * After that completes, we remove the pulumi stack from the project with the find command; this is because
+         * we need to delete the stack in each project it's been instantiated in.
+         */
+
+      steps {
+          sh '''
+            $WORKSPACE/bin/destroy.sh
+            minikube delete || true
+            find . -mindepth 2 -maxdepth 6 -type f -name Pulumi.yaml -execdir $WORKSPACE/pulumi/python/venv/bin/pulumi stack rm marajenkmkube${BUILD_NUMBER} --force --yes \\;
+            '''
+
+      }
+    }
+
+  }
+  post {
+    failure {
+
+          /*
+           * On failure we still need to remove the partial build; however, we want to make sure we exit with a zero
+           * status so we can move on to the next step. Hence the "or true" logic below.
+           *
+           * We also clean up Microk8s.
+           */
+
+        sh '''
+           # Destroy our partial build...
+           $WORKSPACE/bin/destroy.sh || true
+           # True if it's not there
+           minikube delete || true
+           find  $WORKSPACE -mindepth 2 -maxdepth 7 -type f -name Pulumi.yaml -execdir $WORKSPACE/pulumi/python/venv/bin/pulumi stack rm marajenkmkube${BUILD_NUMBER}  --force --yes \\;
+           '''
+    }
+  }
+}

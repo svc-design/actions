@@ -1,0 +1,26 @@
+image:
+  name: artifact.onwalk.net/k8s/iac-ci-runner:latest
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+before_script:
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.onwalk.net/".insteadOf "https://gitlab.onwalk.net/"
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/config
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/network
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/iam-user
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/iam-assumable-role
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/iam-group-with-policies
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/security-group
+  - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.onwalk.net/iac-module/cloudtrail
+
+stages:
+  - check
+  - plan
+  - apply
+  - destroy
+
+check-job:
+  stage: check
+  script:
+    - terraform validate
+    - gitleaks protect -v
