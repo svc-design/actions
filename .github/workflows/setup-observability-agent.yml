@@ -73,5 +73,6 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -i hosts/inventory init_telegraf -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
           ansible-playbook -i hosts/inventory init_observability-agent -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/ 
