@@ -22,9 +22,11 @@ on:
         required: true
       SSH_USER:
         required: true
+      ADMIN_PASSWORD:
+        required: true
 
 jobs:
-  init-observability-server:
+  init-Keycloak-server:
     runs-on: ubuntu-latest
     env:
       DOMAIN: ${{ inputs.domain }}
@@ -75,5 +77,5 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init_keycloak_server -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+          ansible-playbook -i hosts/inventory init_keycloak_server -e "admin_password=${{ secrets.ADMIN_PASSWORD }}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/ 
