@@ -1,0 +1,51 @@
+name: Buid & Publish Helm chart
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+
+jobs:
+  publish-helm-chart:
+    name: Publish Helm chart
+    runs-on: self-hosted
+    env:
+      ARTIFACTORY_REPO: cas-mfg-helm-local/itsm-dev
+      CHART_NAME: itsm-tools
+      CHART_PATH: itsm-tools
+      CHART_VERSION: 0.1.17
+      APP_VERSION: 1.16.0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.5.3
+
+      - name: Pre Setup
+        run: |
+          wget --no-check-certificate https://mirrors.onwalk.net/tools/linux-amd64/helm.tar.gz && sudo tar -xvpf helm.tar.gz -C /usr/local/bin/
+          chmod 755 /usr/local/bin/helm
+
+      - name: Build Helm package
+        run: "helm package --app-version ${{ env.APP_VERSION}} --version ${{ env.CHART_VERSION }} ${{ env.CHART_PATH }}"
+
+      - name: Publish Helm chart
+        working-directory: ${{ env.CHART_PATH }}
+        run: |
+          curl -u${{ secrets.JF_USER }}:${{ secrets.JF_PASSWORD }}                                      \
+          -T ${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz                \
+          "https://jfrog.example.com/${{ env.ARTIFACTORY_REPO }}itsm-dev/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+
+#      - name: Setup JFrog cli
+#        uses: actions/setup-jfrog-cli@v3.4.0
+#        env:
+#          JF_ARTIFACTORY_1: ${{ secrets.SA_CAS_ARF_CORE_RW_CLI_TOKEN }}
+#
+#
+#      - name: Publish Helm chart
+#        run: "jfrog rt u ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz ${{ env.ARTIFACTORY_REPO }}/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"

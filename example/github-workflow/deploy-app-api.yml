@@ -1,0 +1,83 @@
+name: api
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/api/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'app/api/**'
+      - '.github/workflows/**'
+
+env:
+  DOCKER_REGISTRY: "jfrog.example.com"
+  DOCKER_IMAGE_NAME: "gfshcas/dmp/api"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    runs-on: self-hosted
+    container:
+      image: jfrog.example.com/golang:1.20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install linters
+        env:
+          GOPROXY: https://goproxy.cn
+          GO111MODULE: on
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install github.com/googleapis/api-linter/cmd/api-linter@latest
+      - name: Run code linters
+        working-directory: ./app/api
+        run: make lint-check
+      - name: Run API linters
+        working-directory: ./app/api
+        run: make api-lint
+  deploy:
+    runs-on: self-hosted
+    container:
+      image: jfrog.example.com/cas/meta_images/containers-builder:996baf11
+    steps:
+      - name: Login to Artifactory
+        uses: actions/login-action@v1
+        with:
+          registry: jfrog.example.com
+          username: ${{ secrets.ARTIFACTORY_SA }}
+          password: ${{ secrets.ARTIFACTORY_SA_PW }}
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set Build Tag as ENV
+        working-directory: ./app/api
+        run:
+          echo "DOCKER_IMAGE_FULL_NAME=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:$(make show-build-tag)" >> "$GITHUB_ENV"
+      - name: Build&Push Docker Image
+        run: |
+          docker build --network host -t "${{ env.DOCKER_IMAGE_FULL_NAME }}" -f app/api/Dockerfile .
+          docker push "${{ env.DOCKER_IMAGE_FULL_NAME }}"
+      - name: Deploy to Stage
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.K8S_CN_PVG16_ENG_GENERAL }} | base64 -d > $HOME/.kube/config
+          kubectl set image -n dmp-stg deployment/api api=${{ env.DOCKER_IMAGE_FULL_NAME }}
+          kubectl rollout status -n dmp-stg deploy/api
+          sleep 5
+          kubectl logs --ignore-errors=true  -n dmp-stg  -lapp.kubernetes.io/instance=api
+      - name: Deploy to Prod
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.K8S_CN_PVG16_PRD_GENERAL }} | base64 -d > $HOME/.kube/config
+          kubectl set image -n dmp-prod deployment/api api=${{ env.DOCKER_IMAGE_FULL_NAME }}
+          kubectl rollout status -n dmp-prod deploy/api
+          sleep 5
+          kubectl logs --ignore-errors=true  -n dmp-prod  -lapp.kubernetes.io/instance=api

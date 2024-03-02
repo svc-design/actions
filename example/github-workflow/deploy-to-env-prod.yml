@@ -1,0 +1,60 @@
+name: itam-frontend-prod
+
+on:
+  push:
+    branches: [master]
+
+env:
+  DOCKER_REGISTRY: "jfrog.example.com"
+  DOCKER_IMAGE_NAME: "frontend"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: self-hosted
+    container:
+      image: jfrog.example.com/itam/build:0.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          echo "BUILD_TAG=${{ github.run_number }}-${{ github.run_attempt }}" >> $GITHUB_ENV
+
+      - name: Login to Artifactory
+        uses: actions/login-action@v1
+        with:
+          registry: jfrog.example.com
+          username: ${{ secrets.ARTIFACTORY_SA }}
+          password: ${{ secrets.ARTIFACTORY_SA_PW }}
+
+      - name: Build&Push Docker Image
+        run: |
+          DOCKER_IMAGE_FULL_NAME="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.BUILD_TAG }}"
+          echo "DOCKER_IMAGE_FULL_NAME=${DOCKER_IMAGE_FULL_NAME}" >> $GITHUB_ENV
+          docker build --network host -t "$DOCKER_IMAGE_FULL_NAME" -f Dockerfile .
+          docker push "$DOCKER_IMAGE_FULL_NAME"
+  deploy:
+    runs-on: self-hosted
+    needs: [build]
+    container:
+      image: jfrog.example.com/itam/build:0.0.1
+    steps:
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          echo "BUILD_TAG=${{ github.run_number }}-${{ github.run_attempt }}" >> $GITHUB_ENV
+
+      - name: Deploy to Prod
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        working-directory: ./deploy
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.K8S_CN_PVG16_PRD_GENERAL }} | base64 -d > $HOME/.kube/config
+          DOCKER_IMAGE_FULL_NAME="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.BUILD_TAG }}"
+          kubectl set image -n itam-prod deployment/itam-itam-frontend-frontend-prd default=$DOCKER_IMAGE_FULL_NAME
