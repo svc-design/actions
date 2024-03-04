@@ -1,0 +1,55 @@
+name: Linting Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ansible-lint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine-ansible-lint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Ansible Lint
+        run: ansible-lint -v playbook.yml
+
+  yamllint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine-yam-lint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run YAML Lint
+        run: yamllint -d "{extends: default, rules: {line-length: {max: 120}}}" .
+
+  golint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine-go-lint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Go Lint
+        run: golint ./...
+
+  python-lint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine-python-lint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Python Lint
+        run: flake8 --max-line-length=120 .
+
+  eslint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine-eslint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run ESLint
+        run: eslint --ext .js,.jsx .
