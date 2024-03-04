@@ -1,0 +1,62 @@
+name: frontend-stg
+
+on:
+  push:
+    branches:
+      - 'dev*'
+      - 'main'
+      - 'master'
+    tags:
+      - 'release*'
+
+env:
+  DOCKER_REGISTRY: "jfrog.example.com"
+  DOCKER_IMAGE_NAME: "frontend"
+  ENV_MAPPING:
+    dev: "dev"
+    main: "uat"
+    master: "uat"
+    release: "prod"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: self-hosted
+    container:
+      image: jfrog.example.com/mmm/build:0.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          BRANCH_NAME=$(echo ${{ github.ref }} | sed 's|refs/heads/||')
+          TAG_NAME=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
+          if [[ $BRANCH_NAME == dev* ]]; then
+            BUILD_TAG="${{ env.ENV_MAPPING.dev }}-${{ github.run_number }}-${{ github.run_attempt }}"
+          elif [[ $BRANCH_NAME == main || $BRANCH_NAME == master ]]; then
+            if [[ $TAG_NAME == release* ]]; then
+              BUILD_TAG="${{ env.ENV_MAPPING.release }}-${{ github.run_number }}-${{ github.run_attempt }}"
+            else
+              BUILD_TAG="${{ env.ENV_MAPPING.main }}-${{ github.run_number }}-${{ github.run_attempt }}"
+            fi
+          fi
+          echo "BUILD_TAG=${BUILD_TAG}" >> $GITHUB_ENV
+
+      - name: Login to Artifactory
+        uses: actions/login-action@v1
+        with:
+          registry: jfrog.example.com
+          username: ${{ secrets.ARTIFACTORY_SA }}
+          password: ${{ secrets.ARTIFACTORY_SA_PW }}
+
+      - name: Build & Push Docker Image
+        run: |
+          DOCKER_IMAGE_FULL_NAME="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.BUILD_TAG }}"
+          echo "DOCKER_IMAGE_FULL_NAME=${DOCKER_IMAGE_FULL_NAME}" >> $GITHUB_ENV
+          docker build --network host -t "$DOCKER_IMAGE_FULL_NAME" -f Dockerfile .
+          docker push "$DOCKER_IMAGE_FULL_NAME"
