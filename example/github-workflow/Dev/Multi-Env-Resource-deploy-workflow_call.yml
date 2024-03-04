@@ -1,0 +1,40 @@
+name: Deploy to Cluster
+
+on:
+  workflow_call:
+    inputs:
+      docker_registry:
+        required: true
+        type: string
+      docker_image_name:
+        required: true
+        type: string
+      build_tag:
+        required: true
+        type: string
+      kube_config:
+        required: true
+        type: string
+      namespace:
+        required: true
+        type: string
+      deployment_name:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ inputs.kube_config }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to Cluster
+        run: |
+          DOCKER_IMAGE_FULL_NAME="${{ inputs.docker_registry }}/${{ inputs.docker_image_name }}:${{ inputs.build_tag }}"
+          kubectl set image -n ${{ inputs.namespace }} deployment/${{ inputs.deployment_name }} ${{ inputs.deployment_name }}=$DOCKER_IMAGE_FULL_NAME

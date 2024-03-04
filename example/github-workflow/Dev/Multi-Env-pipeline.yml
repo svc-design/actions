@@ -1,0 +1,61 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'dev*'
+    tags:
+      - 'release*'
+
+env:
+  ENV_MAPPING:
+    dev*: 'dev'
+    master: 'uat'
+    release/*: 'prod'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Environment and Image Tag
+        id: env
+        run: |
+          BRANCH=${GITHUB_REF#refs/heads/}
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ $BRANCH == dev* ]]; then
+            ENVIRONMENT='dev'
+            IMAGE_TAG='dev-${GITHUB_RUN_NUMBER}'
+          elif [[ $BRANCH == master ]]; then
+            ENVIRONMENT='uat'
+            IMAGE_TAG='latest'
+          elif [[ $TAG == release* ]]; then
+            ENVIRONMENT='prod'
+            IMAGE_TAG='release-${TAG#release-}'
+          fi
+          echo "ENVIRONMENT=${ENVIRONMENT}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "::set-output name=environment::${ENVIRONMENT}"
+          echo "::set-output name=image_tag::${IMAGE_TAG}"
+
+      - name: Build and Push Docker Image
+        uses: ./.github/workflows/build-image.yml
+        with:
+          docker_registry: 'jfrog.example.com'
+          docker_image_name: 'frontend-${{ steps.env.outputs.environment }}'
+        secrets:
+          artifactory_sa: ${{ secrets.ARTIFACTORY_SA }}
+          artifactory_sa_pw: ${{ secrets.ARTIFACTORY_SA_PW }}
+
+      - name: Deploy to Cluster
+        needs: build-and-deploy
+        uses: ./.github/workflows/deploy-to-cluster.yml
+        with:
+          docker_registry: 'jfrog.example.com'
+          docker_image_name: 'frontend-${{ steps.env.outputs.environment }}'
+          build_tag: ${{ steps.env.outputs.image_tag }}
+          kube_config: ${{ secrets.KUBE_CONFIG }}
+          namespace: ${{ steps.env.outputs.environment }}
+          deployment_name: 'itam-frontend-${{ steps.env.outputs.environment }}'
+
+

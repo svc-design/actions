@@ -1,0 +1,42 @@
+name: Build Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      docker_registry:
+        required: true
+        type: string
+      docker_image_name:
+        required: true
+        type: string
+    secrets:
+      artifactory_sa:
+        required: true
+      artifactory_sa_pw:
+        required: true
+
+jobs:
+  build:
+    runs-on: self-hosted
+    container:
+      image: jfrog.example.com/itam/build:0.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          echo "BUILD_TAG=${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}" >> $GITHUB_ENV
+
+      - name: Login to Artifactory
+        run: |
+          echo "${{ secrets.artifactory_sa_pw }}" | docker login ${{ inputs.docker_registry }} -u ${{ secrets.artifactory_sa }} --password-stdin
+
+      - name: Build & Push Docker Image
+        run: |
+          DOCKER_IMAGE_FULL_NAME="${{ inputs.docker_registry }}/${{ inputs.docker_image_name }}:${{ env.BUILD_TAG }}"
+          echo "DOCKER_IMAGE_FULL_NAME=${DOCKER_IMAGE_FULL_NAME}" >> $GITHUB_ENV
+          docker build --network host -t "$DOCKER_IMAGE_FULL_NAME" -f Dockerfile .
+          docker push "$DOCKER_IMAGE_FULL_NAME"
+
