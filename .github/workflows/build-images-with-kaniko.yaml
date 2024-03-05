@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Kaniko Auth config for Docker registry v1
-        run: /kaniko/setup-kaniko-auth.sh ${{ inputs.registry_addr }} ${{ secrets.artifactory_sa }} ${{ secrets.artifactory_pw }} true
+        run: sh /kaniko/setup-kaniko-auth.sh ${{ inputs.registry_addr }} ${{ secrets.artifactory_sa }} ${{ secrets.artifactory_pw }} true
 
       - name: Build Docker Image with Kaniko
         run: |
