@@ -36,11 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Kaniko Auth config for Docker registry v1
-        run: |
-          mkdir -p ${GITHUB_WORKSPACE}/.docker
-          AUTH=$(echo -n "${{ env.REGISTRY_REPO_USER }}:${{ env.REGISTRY_REPO_PASSWORD }}" | base64)
-          echo "{\"auths\":{\"https://${{ inputs.registry_addr }}/v1/\":{\"auth\":\"${AUTH}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
-          cat ${GITHUB_WORKSPACE}/.docker/config.json
+        run: /kaniko/setup-kaniko-auth.sh ${{ inputs.registry_addr }} ${{ secrets.artifactory_sa }} ${{ secrets.artifactory_pw }} true
 
       - name: Build Docker Image with Kaniko
         run: |
