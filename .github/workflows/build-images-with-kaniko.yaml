@@ -38,13 +38,13 @@ jobs:
       - name: Set up Kaniko environment variables
         run: |
           mkdir ${GITHUB_WORKSPACE}/.docker
-          echo "{\"auths\":{\"${{ inputs.registry_addr }}\":{\"username\":\"${REGISTRY_REPO_USER}\",\"password\":\"${REGISTRY_REPO_PASSWORD}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
+          echo "{\"auths\":{\"${{ inputs.registry_addr }}\":{\"username\":\"${{ env.REGISTRY_REPO_USER }}\",\"password\":\"${{ env.REGISTRY_REPO_PASSWORD }}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
 
       - name: Build Docker Image with Kaniko
         run: |
           echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
-          /kaniko/executor --dockerfile ${DOCKERFILE_PATH}/Dockerfile \
-              --destination "${DOCKER_IMAGE_FULL_NAME}" \
-              --build-arg REGISTRY_REPO_USER=${REGISTRY_REPO_USER} \
-              --build-arg REGISTRY_REPO_PASSWORD=${REGISTRY_REPO_PASSWORD} \
-              --context ${DOCKERFILE_PATH}
+          /kaniko/executor --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
+              --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}" \
+              --build-arg REGISTRY_REPO_USER=${{ env.REGISTRY_REPO_USER }} \
+              --build-arg REGISTRY_REPO_PASSWORD=${{ env.REGISTRY_REPO_PASSWORD }} \
+              --context ${{ env.DOCKERFILE_PATH }}
