@@ -41,6 +41,8 @@ jobs:
       - name: Build Docker Image with Kaniko
         run: |
           echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
-          /kaniko/executor --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
-              --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}" \
+          export GOOGLE_APPLICATION_CREDENTIALS=/kaniko/.docker/config.json
+          /kaniko/executor \
+              --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
+              --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}"  \
               --context ${{ env.DOCKERFILE_PATH }}
