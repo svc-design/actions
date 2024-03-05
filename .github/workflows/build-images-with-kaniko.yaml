@@ -35,10 +35,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Kaniko environment variables
+      - name: Set up Kaniko Auth config for Docker registry v1
         run: |
-          mkdir ${GITHUB_WORKSPACE}/.docker
-          echo "{\"auths\":{\"${{ inputs.registry_addr }}\":{\"username\":\"${{ env.REGISTRY_REPO_USER }}\",\"password\":\"${{ env.REGISTRY_REPO_PASSWORD }}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
+          mkdir -p ${GITHUB_WORKSPACE}/.docker
+          AUTH=$(echo -n "${{ env.REGISTRY_REPO_USER }}:${{ env.REGISTRY_REPO_PASSWORD }}" | base64)
+          echo "{\"auths\":{\"${{ inputs.registry_addr }}/v1/\":{\"auth\":\"${AUTH}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
 
       - name: Build Docker Image with Kaniko
         run: |
