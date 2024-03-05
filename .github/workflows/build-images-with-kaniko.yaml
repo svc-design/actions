@@ -40,12 +40,11 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/.docker
           AUTH=$(echo -n "${{ env.REGISTRY_REPO_USER }}:${{ env.REGISTRY_REPO_PASSWORD }}" | base64)
           echo "{\"auths\":{\"https://${{ inputs.registry_addr }}/v1/\":{\"auth\":\"${AUTH}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
+          cat ${GITHUB_WORKSPACE}/.docker/config.json
 
       - name: Build Docker Image with Kaniko
         run: |
           echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
           /kaniko/executor --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
               --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}" \
-              --build-arg REGISTRY_REPO_USER=${{ env.REGISTRY_REPO_USER }} \
-              --build-arg REGISTRY_REPO_PASSWORD=${{ env.REGISTRY_REPO_PASSWORD }} \
               --context ${{ env.DOCKERFILE_PATH }}
