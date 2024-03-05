@@ -22,7 +22,7 @@ on:
         required: true
 
 jobs:
-  build:
+  image_build_job:
     runs-on: ubuntu-latest
     env:
       REGISTRY_REPO_USER: ${{ secrets.artifactory_sa }}
