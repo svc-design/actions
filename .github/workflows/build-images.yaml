@@ -20,10 +20,6 @@ on:
         type: string
         enum: [docker/node, docker/jrog, kaniko/container, kaniko/action]
         default: 'docker/node'
-      runner:
-        required: false
-        type: string
-        default: ubuntu-latest
     secrets:
       artifactory_sa:
         required: true
@@ -41,7 +37,7 @@ env:
 jobs:
   image-kaniko-action-job:
     if: ${{ inputs.method == 'kaniko/action' }}
-    runs-on: ${{ inputs.runner }} 
+    runs-on: ubuntu-latest 
 
     name: Build alpine-awscli-python3 base image
     steps:
@@ -62,7 +58,7 @@ jobs:
 
   image-docker-node-job:
     if: ${{ inputs.method == 'docker/node' }}
-    runs-on: ${{ inputs.runner }} 
+    runs-on: ubuntu-latest 
 
     steps:
       - name: Checkout
@@ -79,7 +75,7 @@ jobs:
 
   image-kaniko-container-job:
     if: ${{ inputs.method == 'kaniko/container' }}
-    runs-on: ${{ inputs.runner }} 
+    runs-on: ubuntu-latest 
 
     container:
       image: artifact.onwalk.net/public/base/alpine-image-builder:latest
