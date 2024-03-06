@@ -22,60 +22,32 @@ on:
         required: true
 
 jobs:
-  image_build_job:
+  image-build-job:
     runs-on: ubuntu-latest
     env:
-      REGISTRY_REPO_USER: ${{ secrets.artifactory_sa }}
-      REGISTRY_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
-      DOCKER_IMAGE_FULL_NAME: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+      IMAGE_REPO: ${{ inputs.registry_addr }}
+      IMAGE_REPO_USER: ${{ secrets.artifactory_sa }}
+      IMAGE_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+      IMAGE_NAME: ${{ inputs.image_name }}
+      IMAGE_FULL_NAME: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
       DOCKERFILE_PATH: ${{ inputs.dockerfile_path }}
-    container:
-      image: artifact.onwalk.net/public/base/alpine-image-builder:latest
+
+  alpine-awscli-python3:
+    runs-on: ubuntu-latest
+    name: Build alpine-awscli-python3 base image
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@master
 
-      - name: Set up Kaniko environment variables
-        run: |
-          mkdir ${GITHUB_WORKSPACE}/.docker
-          echo "{\"auths\":{\"${{ inputs.registry_addr }}\":{\"username\":\"${REGISTRY_REPO_USER}\",\"password\":\"${REGISTRY_REPO_PASSWORD}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
-
-      - name: Build Docker Image with Kaniko
-        run: |
-          echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
-          /kaniko/executor --dockerfile ${DOCKERFILE_PATH}/Dockerfile \
-              --destination "${DOCKER_IMAGE_FULL_NAME}" \
-              --build-arg REGISTRY_REPO_USER=${REGISTRY_REPO_USER} \
-              --build-arg REGISTRY_REPO_PASSWORD=${REGISTRY_REPO_PASSWORD} \
-              --context ${DOCKERFILE_PATH}
-
-      - name: 'Artifact: build && push yam-lint image'
+      - name: 'Artifact: build && push alpine-awscli-python3 image'
         uses: aevea/action-kaniko@master
         with:
-          registry: ${{ env.IMAGE_REPO }}
-          username: ${{ secrets.REPO_USER }}
-          password: ${{ secrets.HELM_REPO_PASSWORD }}
-          path: 'oci/base/alpine-yaml-lint/'
+          tag: ${{ env.IMAGE_TAG }}
+          image: ${{ env.IMAGE_NAME }}
           build_file: 'Dockerfile'
-          image: public/base/alpine-yaml-lint
-          tag: latest
+          path: ${{ env.DOCKERFILE_PATH }}
+          registry: ${{ env.IMAGE_REPO }}
+          username: ${{ env.IMAGE_REPO_USER }}
+          password: ${{ env.IMAGE_REPO_PASSWORD }}
           cache: true
           cache_registry: cache
-
-
-#    steps:
-#      - uses: actions/checkout@v3
-#
-#      - name: Login to Artifactory
-#        uses: actions/login-action@v1
-#        with:
-#          registry: ${{ env.IMAGE_REPO }}
-#          username: ${{ secrets.REPO_USER }}
-#          password: ${{ secrets.HELM_REPO_PASSWORD }}
-#
-#      - name: Build & push code-lint images
-#        working-directory: oci/base/debian-code-lint/
-#        run: |
-#          docker build --network host -t "${{ env.IMAGE_REPO }}/${{ env.IMAGE_PATH }}:${{ env.IMAGE_TAG }}" -f Dockerfile .
-#          docker push "${{ env.IMAGE_REPO }}/${{ env.IMAGE_PATH }}:${{ env.IMAGE_TAG }}"
-#          docker rmi ${{ env.IMAGE_REPO }}/${{ env.IMAGE_PATH }}:${{ env.IMAGE_TAG }} || true

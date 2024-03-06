@@ -36,7 +36,7 @@ jobs:
 
       - name: Build & push images
         run: |
-          docker login ${{ env.IMAGE_REPO }} -u ${{ secrets.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
+          docker login ${{ env.IMAGE_REPO }} -u ${{ env.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
           docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }} -f Dockerfile ${{ env.DOCKERFILE_PATH }}
           docker push ${{ env.DOCKER_IMAGE_FULL_NAME }}
           docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }} || true
