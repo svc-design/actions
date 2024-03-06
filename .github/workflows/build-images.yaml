@@ -1,0 +1,94 @@
+name: Build Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      method:
+        required: true
+        type: string
+      registry_addr:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      dockerfile_path:
+        required: true
+        type: string
+    secrets:
+      artifactory_sa:
+        required: true
+      artifactory_pw:
+        required: true
+env:
+  IMAGE_REPO: ${{ inputs.registry_addr }}
+  IMAGE_REPO_USER: ${{ secrets.artifactory_sa }}
+  IMAGE_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
+  IMAGE_TAG: ${{ inputs.image_tag }}
+  IMAGE_NAME: ${{ inputs.image_name }}
+  IMAGE_FULL_NAME: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+  DOCKERFILE_PATH: ${{ inputs.dockerfile_path }}
+
+jobs:
+  image-kaniko-action-job:
+    if: ${{ inputs.method == 'kaniko/action' }}
+    runs-on: ubuntu-latest
+
+    name: Build alpine-awscli-python3 base image
+    steps:
+      - uses: actions/checkout@master
+
+      - name: 'Artifact: build && push alpine-awscli-python3 image'
+        uses: aevea/action-kaniko@master
+        with:
+          tag: ${{ env.IMAGE_TAG }}
+          image: ${{ env.IMAGE_NAME }}
+          build_file: 'Dockerfile'
+          path: ${{ env.DOCKERFILE_PATH }}
+          registry: ${{ env.IMAGE_REPO }}
+          username: ${{ env.IMAGE_REPO_USER }}
+          password: ${{ env.IMAGE_REPO_PASSWORD }}
+          cache: true
+          cache_registry: cache
+
+  image-docker-node-job:
+    if: ${{ inputs.method == 'docker/node' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build & push images
+        run: |
+          pwd
+          cd ${{ env.DOCKERFILE_PATH }}
+          docker login ${{ env.IMAGE_REPO }} -u ${{ env.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
+          docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }} -f Dockerfile .
+          docker push ${{ env.DOCKER_IMAGE_FULL_NAME }}
+          docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }} || true
+
+  image-kaniko-container-job:
+    if: ${{ inputs.method == 'kaniko/container' }}
+    runs-on: ubuntu-latest
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-image-builder:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Kaniko Auth config for Docker registry v1
+        run: sh /kaniko/setup-kaniko-auth.sh ${{ inputs.registry_addr }} ${{ secrets.artifactory_sa }} ${{ secrets.artifactory_pw }} true
+
+      - name: Build Docker Image with Kaniko
+        run: |
+          echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
+          export GOOGLE_APPLICATION_CREDENTIALS=/kaniko/.docker/config.json
+          /kaniko/executor \
+              --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
+              --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}"  \
+              --context ${{ env.DOCKERFILE_PATH }}
