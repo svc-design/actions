@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       method:
-        required: false
+        required: true
         type: string
         enum: [docker/node, docker/jrog, kaniko/container, kaniko/action]
         default: 'docker/node'
