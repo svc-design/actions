@@ -67,9 +67,9 @@ jobs:
           pwd
           cd ${{ env.DOCKERFILE_PATH }}
           docker login ${{ env.IMAGE_REPO }} -u ${{ env.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
-          docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }} -f Dockerfile .
-          docker push ${{ env.DOCKER_IMAGE_FULL_NAME }}
-          docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }} || true
+          docker build --network host -t ${{ env.IMAGE_FULL_NAME }} -f Dockerfile .
+          docker push ${{ env.IMAGE_FULL_NAME }}
+          docker rmi ${{ env.IMAGE_FULL_NAME }} || true
 
   image-kaniko-container-job:
     if: ${{ inputs.method == 'kaniko/container' }}
@@ -86,9 +86,9 @@ jobs:
 
       - name: Build Docker Image with Kaniko
         run: |
-          echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
+          echo "Building image: ${{ env.IMAGE_FULL_NAME }}"
           export GOOGLE_APPLICATION_CREDENTIALS=/kaniko/.docker/config.json
           /kaniko/executor \
               --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
-              --destination "${{ env.DOCKER_IMAGE_FULL_NAME }}"  \
+              --destination "${{ env.IMAGE_FULL_NAME }}"  \
               --context ${{ env.DOCKERFILE_PATH }}
