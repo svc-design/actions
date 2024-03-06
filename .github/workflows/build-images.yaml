@@ -92,3 +92,24 @@ jobs:
               --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
               --destination "${{ env.IMAGE_FULL_NAME }}"  \
               --context ${{ env.DOCKERFILE_PATH }}
+jobs:
+  image-docker-node-jrog-job:
+    if: ${{ inputs.method == 'docker/jrog' }}
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Artifactory
+        uses: actions/login-action@v1
+        with:
+          registry: "${{ env.IMAGE_REPO }}"
+          username: "${{ env.REPO_USER }}"
+          password: "${{ env.REPO_PASSWORD }}"
+
+      - name: Build & push images
+        run: |
+          cd ${{ env.DOCKERFILE_PATH }}
+          docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }} -f Dockerfile .
+          docker push "${{ env.IMAGE_FULL_NAME }}"
+          docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }} || true

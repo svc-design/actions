@@ -1,0 +1,91 @@
+name: Workflow Call Build and Push Charts
+on:
+  workflow_call:
+    inputs:
+      chart_repo:
+        required: true
+        type: string
+      chart_name:
+        required: true
+        type: string
+      chart_version:
+        required: true
+        type: string
+      chart_values:
+        required: false
+        type: string
+      method:
+        required: true
+        type: string
+    secrets:
+      kube_config:
+        required: true
+
+
+jobs:
+  deoloy-charts-with-helm:
+    if: ${{ inputs.method == 'helm/chart' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-chart-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set kube config
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.kube_config }} | base64 -d > $HOME/.kube/config
+
+      - name: Set chart values
+        if: github.event_name == 'pull_request'
+        run: |
+          echo ${{ inputs.chart_vaules }} > $HOME/chart-values.yaml
+
+      - name: Upgrade install chart: ${{ inputs.chart_name }}
+        if: github.event_name == 'pull_request'
+        run: |
+          helm repo add stable ${{ inputs.chart_repo }}
+          helm repo update
+          helm upgrade --install ${{ inputs.chart_name }} stable/${{ inputs.chart_name }} \
+               --version ${{ inputs.chart_version }}                                      \
+               -n ${{ inputs.namespace }}                                                 \
+               -f $HOME/chart-values.yaml
+  deploy-charts-with-helmfile:
+    if: ${{ inputs.method == 'helmfile/chart' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-chart-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set kube config
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.kube_config }} | base64 -d > $HOME/.kube/config
+
+      - name: Test deploy chart: ${{ inputs.chart_name }}
+        if: github.event_name == 'pull_request'
+        run: |
+          helmfile -f clusters/${{ inputs.cluster_name }}/${{ inputs.namespace }}/{helmFile}.yaml test
+
+      - name: Show chart diff: ${{ inputs.chart_name }}
+        if: github.event_name == 'pull_request'
+        run: |
+          helmfile -f clusters/${{ inputs.cluster_name }}/${{ inputs.namespace }}/{helmFile}.yaml diff
+
+      - name: Deploy chart: ${{ inputs.chart_name }}
+        if: github.event_name == 'pull_request'
+        run: |
+          helmfile -f clusters/${{ inputs.cluster_name }}/${{ inputs.namespace }}/{helmFile}.yaml apply

@@ -1,0 +1,59 @@
+name: Workflow Call Build and Push Charts
+on:
+  workflow_call:
+    inputs:
+      chart_name:
+        required: true
+        type: string
+      chart_path:
+        required: true
+        type: string
+      method:
+        required: true
+        type: string
+    secrets:
+      ARF_USERNAME:
+        required: true
+      ARF_PASSWORD:
+        required: true
+      ARF_TOKEN:
+        required: true
+
+
+jobs:
+  build-charts-action-job:
+    if: ${{ inputs.method == 'jrogcli/action' }}
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Setup JFrog cli
+        uses: actions/setup-jfrog-cli@v3.4.0
+        env:
+          JF_ARTIFACTORY_1: ${{ secrets.SA_CAS_ARF_CORE_RW_CLI_TOKEN }}
+
+      - name: Publish Helm chart
+        run: "jfrog rt u ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz ${{ env.ARTIFACTORY_REPO }}/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+  build-charts-container-job:
+    if: ${{ inputs.method == 'helm/container' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-image-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Publish Helm chart
+        working-directory: ${{ env.CHART_PATH }}
+        run: |
+          curl -u${{ secrets.JF_USER }}:${{ secrets.JF_PASSWORD }}                                   \
+          -T ${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz                \
+          "https://arf.tesla.cn/artifactory/${{ env.ARTIFACTORY_REPO }}itsm-dev/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
