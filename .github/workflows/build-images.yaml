@@ -18,8 +18,6 @@ on:
       method:
         required: true
         type: string
-        enum: [docker/node, docker/jrog, kaniko/container, kaniko/action]
-        default: 'docker/node'
     secrets:
       artifactory_sa:
         required: true
