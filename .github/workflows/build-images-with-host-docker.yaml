@@ -22,29 +22,21 @@ on:
         required: true
 
 jobs:
-  build:
+  image-build-job:
     runs-on: ubuntu-latest
     env:
-      REGISTRY_REPO_USER: ${{ secrets.artifactory_sa }}
-      REGISTRY_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
+      IMAGE_REPO: ${{ inputs.registry_addr }}
+      IMAGE_REPO_USER: ${{ secrets.artifactory_sa }}
+      IMAGE_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
       DOCKER_IMAGE_FULL_NAME: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
       DOCKERFILE_PATH: ${{ inputs.dockerfile_path }}
-    container:
-      image: artifact.onwalk.net/public/base/alpine-image-builder:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Kaniko environment variables
+      - name: Build & push images
         run: |
-          mkdir ${GITHUB_WORKSPACE}/.docker
-          echo "{\"auths\":{\"${{ inputs.registry_addr }}\":{\"username\":\"${REGISTRY_REPO_USER}\",\"password\":\"${REGISTRY_REPO_PASSWORD}\"}}}" > ${GITHUB_WORKSPACE}/.docker/config.json
-
-      - name: Build Docker Image with Kaniko
-        run: |
-          echo "Building image: ${{ env.DOCKER_IMAGE_FULL_NAME }}"
-          /kaniko/executor --dockerfile ${DOCKERFILE_PATH}/Dockerfile \
-              --destination "${DOCKER_IMAGE_FULL_NAME}" \
-              --build-arg REGISTRY_REPO_USER=${REGISTRY_REPO_USER} \
-              --build-arg REGISTRY_REPO_PASSWORD=${REGISTRY_REPO_PASSWORD} \
-              --context ${DOCKERFILE_PATH}
+          docker login ${{ env.IMAGE_REPO }} -u ${{ secrets.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
+          docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }} -f Dockerfile ${{ env.DOCKERFILE_PATH }}
+          docker push ${{ env.DOCKER_IMAGE_FULL_NAME }}
+          docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }} || true
