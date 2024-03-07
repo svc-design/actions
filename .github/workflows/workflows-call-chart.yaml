@@ -1,0 +1,84 @@
+name: Workflow Call Build and Push Charts
+on:
+  workflow_call:
+    inputs:
+      chart_name:
+        required: false
+        type: string
+      chart_version:
+        required: false
+        type: string
+      chart_path:
+        required: true
+        type: string
+      chart_repo:
+        required: true
+        type: string
+      method:
+        required: false
+        type: string
+    secrets:
+      ARTIFACTORY_USER:
+        required: true
+      ARTIFACTORY_PASSWORD:
+        required: true
+      ARF_TOKEN:
+        required: false
+
+env:
+  CHART_PATH: ${{ inputs.chart_path }}
+  JF_REPO: ${{ inputs.chart_repo }}
+  JF_USER: ${{ secrets.ARTIFACTORY_USER }}
+  JF_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+jobs:
+  build-charts-container-job:
+#    if: ${{ inputs.method == 'helm/container' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-chart-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: check chart package
+        working-directory: ${{ env.CHART_PATH }}
+        run: helm lint
+
+      - name: Build chart package
+        working-directory: ${{ env.CHART_PATH }}
+        run: helm package ./
+
+      - name: Set chart package name as ENV
+        working-directory: ${{ env.CHART_PATH }}
+        run: echo "CHART_FULL_NAME=$(ls *.tgz)" >> $GITHUB_ENV
+
+      - name: Publish chart
+        working-directory: ${{ env.CHART_PATH }}
+        run: |
+          curl -u${{ env.JF_USER }}:${{ env.JF_PASSWORD }}                                           \
+          -T ${{ env.CHART_FULL_NAME }}                                                              \
+          "${{ env.JF_REPO }}/${{ env.CHART_FULL_NAME }}"
+
+#  build-charts-action-job:
+#    if: ${{ inputs.method == 'jrogcli/action' }}
+#    runs-on: self-hosted
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#        with:
+#          submodules: 'recursive'
+#
+#      - name: Setup JFrog cli
+#        uses: actions/setup-jfrog-cli@v3.4.0
+#        env:
+#          JF_ARTIFACTORY_1: ${{ secrets.ARF_TOKEN }}
+#
+#      - name: Publish Helm chart
+#        run: "jfrog rt u ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz ${{ env.ARTIFACTORY_REPO }}/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+#

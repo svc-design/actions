@@ -1,0 +1,55 @@
+name: Workflow Call Build Images
+
+on:
+  workflow_call:
+    inputs:
+      registry_addr:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: false
+        type: string
+      dockerfile_path:
+        required: true
+        type: string
+    secrets:
+      artifactory_sa:
+        required: true
+      artifactory_pw:
+        required: true
+
+env:
+  IMAGE_REPO: "${{ inputs.registry_addr }}"
+  REPO_USER: "${{ secrets.artifactory_sa }}"
+  REPO_PASSWORD: "${{ secrets.artifactory_pw }}"
+  DOCKERFILE_PATH: "${{ inputs.dockerfile_path }}"
+  DOCKER_IMAGE_FULL_NAME: "${{ inputs.registry_addr }}/${{ inputs.image_name }}"
+
+jobs:
+  build-images-job:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Artifactory
+        uses: actions/login-action@v1
+        with:
+          registry: "${{ env.IMAGE_REPO }}"
+          username: "${{ env.REPO_USER }}"
+          password: "${{ env.REPO_PASSWORD }}"
+
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          echo "BUILD_TAG=${{ github.run_number }}-${{ github.run_attempt }}" >> $GITHUB_ENV
+
+      - name: Build & push images
+        run: |
+          cd ${{ env.DOCKERFILE_PATH }}
+          docker build --network host -t ${{ env.DOCKER_IMAGE_FULL_NAME }}:${{ env.BUILD_TAG }} -f Dockerfile .
+          docker push "${{ env.DOCKER_IMAGE_FULL_NAME }}:${{ env.BUILD_TAG }}"
+          docker rmi ${{ env.DOCKER_IMAGE_FULL_NAME }}:${{ env.BUILD_TAG }} || true

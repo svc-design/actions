@@ -1,0 +1,106 @@
+name: Workflow Call Deploy App with Charts
+on:
+  workflow_call:
+    inputs:
+      helmfile:
+        required: true
+        type: string
+      method:
+        required: true
+        type: string
+      chart_repo:
+        required: false
+        type: string
+      chart_name:
+        required: false
+        type: string
+      chart_version:
+        required: false
+        type: string
+      chart_values:
+        required: false
+        type: string
+    secrets:
+      KUBE_CONFIG:
+        required: true
+      ARTIFACTORY_USER:
+        required: true
+      ARTIFACTORY_PASSWORD:
+        required: true
+
+env:
+  HELMFILE: ${{ inputs.helmfile }}
+  KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+  ARF_USERNAME: ${{ secrets.ARTIFACTORY_USER }}
+  ARF_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+jobs:
+  deploy-charts-with-helmfile:
+    if: ${{ inputs.method == 'helmfile/chart' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-chart-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Show helm/helmfile/kubectl version
+        run: |
+          helmfile -v
+          helm version
+          kubectl version
+          helmfile init --force
+          helm plugin list
+
+      - name: Set kube config
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ env.KUBE_CONFIG }} | base64 -d > $HOME/.kube/config
+
+      - name: Test deploy chart
+        if: github.event_name == 'pull_request'
+        run: helmfile -f ${{ env.HELMFILE }} test
+
+      - name: Show chart diff
+        if: github.event_name == 'pull_request'
+        run: helmfile -f ${{ env.HELMFILE }} diff
+
+      - name: Deploy chart
+        run: helmfile -f ${{ env.HELMFILE }} apply
+
+  deoloy-charts-with-helm:
+    if: ${{ inputs.method == 'helm/chart' }}
+    runs-on: self-hosted
+
+    container:
+      image: artifact.onwalk.net/public/base/alpine-chart-builder:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set kube config
+        run: |
+          mkdir -p $HOME/.kube
+          echo ${{ secrets.kube_config }} | base64 -d > $HOME/.kube/config
+
+      - name: Set chart values
+        if: github.event_name == 'pull_request'
+        run: |
+          echo ${{ inputs.chart_vaules }} > $HOME/chart-values.yaml
+
+      - name: Deploy charts
+        if: github.event_name == 'pull_request'
+        run: |
+          helm repo add stable ${{ inputs.chart_repo }}
+          helm repo update
+          helm upgrade --install ${{ inputs.chart_name }} stable/${{ inputs.chart_name }} \
+               --version ${{ inputs.chart_version }}                                      \
+               -n ${{ inputs.namespace }}                                                 \
+               -f $HOME/chart-values.yaml

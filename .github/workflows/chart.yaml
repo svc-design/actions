@@ -56,4 +56,3 @@ jobs:
         run: |
           curl -u${{ secrets.JF_USER }}:${{ secrets.JF_PASSWORD }}                                   \
           -T ${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz                \
-          "https://arf.tesla.cn/artifactory/${{ env.ARTIFACTORY_REPO }}itsm-dev/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
