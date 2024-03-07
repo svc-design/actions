@@ -92,7 +92,6 @@ jobs:
               --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
               --destination "${{ env.IMAGE_FULL_NAME }}"  \
               --context ${{ env.DOCKERFILE_PATH }}
-jobs:
   image-docker-node-jrog-job:
     if: ${{ inputs.method == 'docker/jrog' }}
     runs-on: self-hosted
