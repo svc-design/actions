@@ -43,24 +43,24 @@ jobs:
               local app_name=$(basename $helmfile .yml)  # 移除扩展名 .yml
               # 定义 YAML 字符串并将其传递给后续命令
               cat <<EOF | kubectl apply -f -
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: ${app_name}-application
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: ${config_repo}
-    path: ${helmfile}
-    targetRevision: HEAD
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: ${namespace}
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: ${app_name}-application
+            namespace: argocd
+          spec:
+            project: default
+            source:
+              repoURL: ${config_repo}
+              path: ${helmfile}
+              targetRevision: HEAD
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: ${namespace}
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+          EOF
           }
           create_argocd_application "${{ inputs.helmfile }}" "${{ inputs.namespace }}" "${{ inputs.config_repo }}"
