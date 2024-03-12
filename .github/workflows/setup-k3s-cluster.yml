@@ -94,6 +94,6 @@ jobs:
                            -e "vault_token=$VAULT_TOKEN"                       \
                            -e "vault_secret_path=$VAULT_SECRET_PATH"           \
                            -e "cluster_name=${{inputs.ssh_host_name}}"         \
-                           -e "advertise-address=$SSH_HOST_IP                  \
+                           -e "advertise-address=$SSH_HOST_IP"                 \
                            -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/ 
