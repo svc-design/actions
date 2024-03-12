@@ -6,6 +6,9 @@ on:
       helmfile:
         required: true
         type: string
+      apiserver:
+        required: true
+        type: string
       namespace:
         required: true
         type: string
