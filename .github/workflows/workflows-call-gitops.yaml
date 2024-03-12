@@ -41,8 +41,9 @@ jobs:
         run: |
           function create_argocd_application() {
               local helmfile=$1
-              local namespace=$2
-              local config_repo=$3
+              local apiserver=$2
+              local namespace=$3
+              local config_repo=$4
               local app_name=$(basename $helmfile .yml)  # 移除扩展名 .yml
               # 定义 YAML 字符串并将其传递给后续命令
               cat <<EOF | kubectl apply -f -
@@ -58,7 +59,7 @@ jobs:
               path: ${helmfile}
               targetRevision: HEAD
             destination:
-              server: https://kubernetes.default.svc
+              server: ${apiserver}
               namespace: ${namespace}
             syncPolicy:
               automated:
@@ -66,4 +67,4 @@ jobs:
                 selfHeal: true
           EOF
           }
-          create_argocd_application "${{ inputs.helmfile }}" "${{ inputs.namespace }}" "${{ inputs.config_repo }}"
+          create_argocd_application "${{ inputs.helmfile }}" "${{ inputs.apiserver }}" "${{ inputs.namespace }}" "${{ inputs.config_repo }}"
