@@ -1,0 +1,45 @@
+name: Auto PR and Merge
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      tag:
+        required: false
+        type: string
+    types:
+      - completed
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create branch and make changes
+        run: |
+          git checkout -b ${{ github.event.inputs.branch }}
+          echo "Automated change" >> automated-file.txt
+          git add automated-file.txt
+          git commit -m "Automated commit"
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Create pull request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.event.inputs.branch }}
+          title: Automated PR
+          body: Automated PR created by GitHub Actions.
+
+      - name: Merge pull request
+        if: steps.create_pr.outputs.pull-request-created == 'true'
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
