@@ -1,0 +1,66 @@
+name: Workflow Call Setup DevOPS Server
+on:
+  workflow_call:
+    inputs:
+      group_name:
+        required: true
+        type: string
+      branch_name:
+        required: true
+        type: string
+      install_version:
+        required: true
+        type: string
+    secrets:
+      ANSIBLE_SSH_USER:
+        required: true
+      ANSIBLE_SSH_PASSWORD:
+        required: true
+
+jobs:
+  setup-app-cluster:
+    runs-on: ubuntu-latest
+    env:
+      ANSIBEL_SSH_USER: ${{ secrets.SSH_USER }}
+      ANSIBLE_SSH_PASSWORD: ${{ secrets.SSH_USER }}
+
+    steps:
+      - name: "Checkout repository and submodules"
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.inputs.branch_name}}
+
+      - name: Pre Setup
+        run: |
+          echo "${{ secrets.ANSIBLE_SSH_PASSWORD }}" > ~/.vault_pass.txt
+          echo "ansible_password: 'xxxx'" >> inventory/group_vars/all.yml
+          echo "ansible_become_password: 'xxxx'" >> inventory/group_vars/all.yml
+
+      - name: Deploy Ignition Server
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -u ${{ secrets.ANSIBLE_SSH_USER }}                 \
+                           -i inventory/cas_gfs_ignition.ini                  \
+                           -kK playbooks/ignition-server.yml                  \
+                           -l ${{ input.instance_name }}                      \
+                           -e 'ign_install_ver=${{ input.install_version }}'  \
+                           --vault-password-file .vault_pass.txt \
+                           --diff
+        working-directory: ./
+
+      - name: Restart Ignition Server
+        run: |
+          ansible -u ac-casbot-axl-240408 -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a "ps -ef | grep ignition | awk '{print \"sudo kill -9 \" \$2 }' | sh"
+          ansible -u ac-casbot-axl-240408 -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a 'sudo systemctl restart ignition && systemctl status ignition'
+        working-directory: ./
+
+      - name: Finished Ignition Server Setup
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+        working-directory: ./
+
+      - name: Clean up
+        run: |
+          git reset --hard
+          rm ~/.ans_cas_gfs_vault -f
+        working-directory: ./
