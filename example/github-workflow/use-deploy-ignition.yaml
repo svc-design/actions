@@ -50,8 +50,8 @@ jobs:
 
       - name: Restart Ignition Server
         run: |
-          ansible -u ac-casbot-axl-240408 -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a "ps -ef | grep ignition | awk '{print \"sudo kill -9 \" \$2 }' | sh"
-          ansible -u ac-casbot-axl-240408 -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a 'sudo systemctl restart ignition && systemctl status ignition'
+          ansible -u ansible-user -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a "ps -ef | grep ignition | awk '{print \"sudo kill -9 \" \$2 }' | sh"
+          ansible -u ansible-user -i inventory/cas_gfs_ignition.ini IGN_GFS_GAME_STAGE -b -m shell -a 'sudo systemctl restart ignition && systemctl status ignition'
         working-directory: ./
 
       - name: Finished Ignition Server Setup
