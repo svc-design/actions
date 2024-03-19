@@ -50,21 +50,25 @@ jobs:
           apiVersion: argoproj.io/v1alpha1
           kind: Application
           metadata:
-            name: ${app_name}-application
+            name: kustomize-inline-guestbook
             namespace: argocd
+            finalizers:
+              - resources-finalizer.argocd.argoproj.io
           spec:
-            project: default
-            source:
-              repoURL: ${config_repo}
-              path: ${helmfile}
-              targetRevision: HEAD
+            project: itsm
             destination:
+              namespace: itsm-dev-db
               server: ${apiserver}
-              namespace: ${namespace}
+            source:
+              path: apps/postgresql
+              repoURL: https://github.com/svc-design/gitops.git
+              targetRevision: main
             syncPolicy:
               automated:
                 prune: true
                 selfHeal: true
+              syncOptions:
+              - ApplyOutOfSyncOnly=true
           EOF
           }
           create_argocd_application "${{ inputs.helmfile }}" "${{ inputs.apiserver }}" "${{ inputs.namespace }}" "${{ inputs.config_repo }}"
