@@ -92,7 +92,7 @@ jobs:
                            -e "dns_sk=$DNS_SK"                                    \
                            -e "vault_url=$VAULT_URL"                              \
                            -e "vault_token=$VAULT_TOKEN"                          \
-                           -e "vault_secret_path=$VAULT_SECRET_PATH"              \ 
+                           -e "vault_secret_path=$VAULT_SECRET_PATH"              \
                            -e "cluster_name=${{inputs.ssh_host_name}}"            \
                            -e "advertise-address=$SSH_HOST_IP"                    \
                            -e "domain=${{inputs.domain}}" -D
