@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init_k3s_cluster_with_gitops     \
+          ansible-playbook -i hosts/inventory init_k3s_cluster_std             \
                            -e "dns_ak=$DNS_AK"                                 \
                            -e "dns_sk=$DNS_SK"                                 \
                            -e "vault_url=$VAULT_URL"                           \
@@ -96,4 +96,4 @@ jobs:
                            -e "cluster_name=${{inputs.ssh_host_name}}"         \
                            -e "advertise-address=$SSH_HOST_IP"                 \
                            -e "domain=${{inputs.domain}}" -D
-        working-directory: playbook/ 
+        working-directory: playbook/
