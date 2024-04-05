@@ -1,4 +1,4 @@
-name: Workflow Call Setup Observability Server
+name: Workflow Call Setup Deepflow Server
 on:
   workflow_call:
     inputs:
@@ -74,5 +74,5 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init-deepflow-server -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+          ansible-playbook -i hosts/inventory init_deepflow -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/
