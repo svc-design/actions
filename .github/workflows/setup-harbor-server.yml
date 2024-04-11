@@ -23,6 +23,10 @@ on:
         required: true
       DNS_SK:
         required: true
+      OSS_AK:
+        required: true
+      OSS_SK:
+        required: true
       SSH_USER:
         required: true
 
@@ -82,5 +86,5 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init-harbor-server -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+          ansible-playbook -i hosts/inventory init-harbor-server -e "oss_ak=${{secrets.OSS_AK}}" -e "oss_sk=${{secrets.OSS_SK}}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/
