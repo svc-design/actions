@@ -79,12 +79,16 @@ jobs:
       - name: Update playbook hosts
         run: |
           bash ansible_playbook_hosts_setup.sh
-          #bash ansible_playbook_tasks_setup_harbor.sh
         working-directory: playbook/ 
 
       - name: Setup Harbor Server 
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init-harbor-server -e "oss_ak=${{secrets.OSS_AK}}" -e "oss_sk=${{secrets.OSS_SK}}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+          ansible-playbook -i hosts/inventory init-harbor-server       \
+                           -e "backend_type=oss"                       \
+                           -e "oss_ak=${{secrets.OSS_AK}}"             \
+                           -e "oss_sk=${{secrets.OSS_SK}}"             \
+                           -e "cluster_name=${{inputs.ssh_host_name}}" \
+                           -e "domain=${{inputs.domain}}" -D
         working-directory: playbook/
