@@ -48,6 +48,12 @@ jobs:
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
 
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BRANCH_NAME=${GITHUB_HEAD_REF}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV
           elif [[ "$BRANCH_NAME" =~ ^release* ]] && [[ -z "$TAG" ]] ;then
@@ -87,6 +93,12 @@ jobs:
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
 
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BRANCH_NAME=${GITHUB_HEAD_REF}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV
           elif [[ "$BRANCH_NAME" =~ ^release* ]] && [[ -z "$TAG" ]] ;then
@@ -124,6 +136,12 @@ jobs:
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
 
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BRANCH_NAME=${GITHUB_HEAD_REF}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV
           elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ -z "$TAG" ]] ;then
@@ -159,6 +177,12 @@ jobs:
           git config --global --add safe.directory '*'
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BRANCH_NAME=${GITHUB_HEAD_REF}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV
