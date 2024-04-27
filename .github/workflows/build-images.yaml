@@ -82,6 +82,9 @@ jobs:
   image-docker-node-job:
     if: ${{ inputs.method == 'docker/node' }}
     runs-on: ubuntu-latest 
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
