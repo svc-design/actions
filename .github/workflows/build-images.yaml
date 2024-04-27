@@ -112,7 +112,7 @@ jobs:
           cd ${{ env.DOCKERFILE_PATH }}
           docker login ${{ env.IMAGE_REPO }} -u ${{ env.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
           docker build --network host -t ${{ env.IMAGE_NAME_NOTAG }}:${{ env.BUILD_TAG }} -f Dockerfile .
-          docker push ${{ env.IMAGE_FULL_NAME }}
+          docker push ${{ env.IMAGE_NAME_NOTAG }}:${{ env.BUILD_TAG }}
           docker rmi ${{ env.IMAGE_FULL_NAME }} || true
 
   image-kaniko-container-job:
