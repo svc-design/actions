@@ -91,7 +91,7 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
           TAG=$(git tag --contains HEAD | head -n 1)
-          BRANCH_NAME=$(git branch --show-current)
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD | sort | uniq)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
