@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       image_tag:
-        required: true
+        required: false
         type: string
       dockerfile_path:
         required: true
@@ -29,7 +29,8 @@ env:
   IMAGE_REPO_PASSWORD: ${{ secrets.artifactory_pw }}
   IMAGE_TAG: ${{ inputs.image_tag }}
   IMAGE_NAME: ${{ inputs.image_name }}
-  IMAGE_FULL_NAME: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+  IMAGE_NAME_FULL: ${{ inputs.registry_addr }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+  IMAGE_NAME_NOTAG: ${{ inputs.registry_addr }}/${{ inputs.image_name }}
   DOCKERFILE_PATH: ${{ inputs.dockerfile_path }}
 
 jobs:
@@ -62,7 +63,7 @@ jobs:
       - name: 'Artifact: build && push alpine-awscli-python3 image'
         uses: aevea/action-kaniko@master
         with:
-          tag: ${{ env.IMAGE_TAG }}
+          tag: ${{ env.BUILD_TAG }}
           image: ${{ env.IMAGE_NAME }}
           build_file: 'Dockerfile'
           path: ${{ env.DOCKERFILE_PATH }}
@@ -103,7 +104,7 @@ jobs:
           pwd
           cd ${{ env.DOCKERFILE_PATH }}
           docker login ${{ env.IMAGE_REPO }} -u ${{ env.IMAGE_REPO_USER }} -p ${{ env.IMAGE_REPO_PASSWORD }}
-          docker build --network host -t ${{ env.IMAGE_FULL_NAME }} -f Dockerfile .
+          docker build --network host -t ${{ env.IMAGE_NAME_NOTAG }}:${{ env.BUILD_TAG }} -f Dockerfile .
           docker push ${{ env.IMAGE_FULL_NAME }}
           docker rmi ${{ env.IMAGE_FULL_NAME }} || true
 
@@ -144,7 +145,7 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS=/kaniko/.docker/config.json
           /kaniko/executor \
               --dockerfile ${{ env.DOCKERFILE_PATH }}/Dockerfile \
-              --destination "${{ env.IMAGE_FULL_NAME }}"  \
+              --destination "${{ env.IMAGE_NAME_NOTAG }}:${{ env.BUILD_TAG }}"  \
               --context ${{ env.DOCKERFILE_PATH }}
   image-docker-node-jrog-job:
     if: ${{ inputs.method == 'docker/jrog' }}
