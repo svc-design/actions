@@ -41,6 +41,24 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          TAG=$(git tag --contains HEAD | head -n 1)
+          SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ -z "$TAG" ]] ;then
+              PR_ID=$(git log | grep "Merge pull request" | head -n 1 | awk -F# '{print $2}' | awk '{print $1}')
+              echo "BUILD_TAG=PR-${PR_ID}-$SHORT_COMMIT_ID" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ ! -z "$TAG" ]] ;then
+              echo "BUILD_TAG=$TAG" >> $GITHUB_ENV
+          else
+            PR_NAME=$(git branch | grep '^\*' | awk '{print $2}' | awk -F- '{print $1"-"$2}')
+            echo "BUILD_TAG=${PR_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+          fi
+
       - name: 'Artifact: build && push alpine-awscli-python3 image'
         uses: aevea/action-kaniko@master
         with:
@@ -62,6 +80,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          TAG=$(git tag --contains HEAD | head -n 1)
+          SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ -z "$TAG" ]] ;then
+              PR_ID=$(git log | grep "Merge pull request" | head -n 1 | awk -F# '{print $2}' | awk '{print $1}')
+              echo "BUILD_TAG=PR-${PR_ID}-$SHORT_COMMIT_ID" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ ! -z "$TAG" ]] ;then
+              echo "BUILD_TAG=$TAG" >> $GITHUB_ENV
+          else
+            PR_NAME=$(git branch | grep '^\*' | awk '{print $2}' | awk -F- '{print $1"-"$2}')
+            echo "BUILD_TAG=${PR_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+          fi
+
       - name: Build & push images
         run: |
           pwd
@@ -81,6 +117,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          TAG=$(git tag --contains HEAD | head -n 1)
+          SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ -z "$TAG" ]] ;then
+              PR_ID=$(git log | grep "Merge pull request" | head -n 1 | awk -F# '{print $2}' | awk '{print $1}')
+              echo "BUILD_TAG=PR-${PR_ID}-$SHORT_COMMIT_ID" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ ! -z "$TAG" ]] ;then
+              echo "BUILD_TAG=$TAG" >> $GITHUB_ENV
+          else
+            PR_NAME=$(git branch | grep '^\*' | awk '{print $2}' | awk -F- '{print $1"-"$2}')
+            echo "BUILD_TAG=${PR_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+          fi
+
       - name: Set up Kaniko Auth config for Docker registry v1
         run: sh /kaniko/setup-kaniko-auth.sh ${{ inputs.registry_addr }} ${{ secrets.artifactory_sa }} ${{ secrets.artifactory_pw }} true
 
@@ -98,6 +152,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set Build Tag as ENV
+        run: |
+          git config --global --add safe.directory '*'
+          TAG=$(git tag --contains HEAD | head -n 1)
+          SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ -z "$TAG" ]] ;then
+              PR_ID=$(git log | grep "Merge pull request" | head -n 1 | awk -F# '{print $2}' | awk '{print $1}')
+              echo "BUILD_TAG=PR-${PR_ID}-$SHORT_COMMIT_ID" >> $GITHUB_ENV
+          elif [[ "$BRANCH_NAME" =~ ^release\/ ]] && [[ ! -z "$TAG" ]] ;then
+              echo "BUILD_TAG=$TAG" >> $GITHUB_ENV
+          else
+            PR_NAME=$(git branch | grep '^\*' | awk '{print $2}' | awk -F- '{print $1"-"$2}')
+            echo "BUILD_TAG=${PR_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+          fi
 
       - name: Login to Artifactory
         uses: actions/login-action@v1
