@@ -91,16 +91,7 @@ jobs:
           git config --global --add safe.directory '*'
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)
-
-          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
-            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          elif [[ "${GITHUB_REF}" == refs/pull/* ]]; then
-            BRANCH_NAME="${GITHUB_HEAD_REF}"
-          else
-            echo "Detached or no branch (e.g., tag)"
-            exit 1
-          fi
-          echo "Branch Name: $BRANCH_NAME"
+          BRANCH_NAME=$(git branch  --show-current)
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV
