@@ -25,9 +25,9 @@ on:
         required: true
       SUDO_PASSWORD:
         required: true
-      ANSIBLE_VAULT_PASSWORD:
-        required: true
       ADMIN_PASSWORD:
+        required: true
+      ANSIBLE_VAULT_PASSWORD:
         required: true
 
 jobs:
@@ -39,6 +39,7 @@ jobs:
       DNS_SK: ${{ secrets.DNS_SK }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
       SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
@@ -73,5 +74,9 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory playbooks/init_chartmuseum -e "ansible_become_pass=${{env.SUDO_PASSWORD}}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+          ansible-playbook -i hosts/inventory playbooks/init_chartmuseum     \
+                           -e "admin_password=${{ env.ADMIN_PASSWORD }}"     \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}" \
+                           -e "cluster_name=${{ inputs.ssh_host_name }}"     \
+                           -e "domain=${{ inputs.domain }}" -D
         working-directory: ansible/
