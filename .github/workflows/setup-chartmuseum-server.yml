@@ -62,12 +62,12 @@ jobs:
 
       - name: Update playbook hosts
         run: |
-          bash ansible_playbook_hosts_setup.sh
-        working-directory: playbook/ 
+          bash scripts/ansible_playbook_hosts_setup.sh
+        working-directory: ansible/ 
 
       - name: Setup Chartmuseum Server 
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init_chartmuseum -e "ansible_become_pass=${{env.SUDO_PASSWORD}}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
-        working-directory: playbook/
+          ansible-playbook -i hosts/inventory playbooks/init_chartmuseum -e "ansible_become_pass=${{env.SUDO_PASSWORD}}" -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
+        working-directory: ansible/
