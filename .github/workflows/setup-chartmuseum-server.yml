@@ -56,13 +56,13 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.6.4
-        if: ${{ exists(secrets.GCP_CREDENTIALS_JSON) }}
+        if: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
-        if: ${{ exists(secrets.GCP_CREDENTIALS_JSON) }}
+        if: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
