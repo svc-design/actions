@@ -56,21 +56,19 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.6.4
-        if: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
-        if: ${{ secrets.GCP_CREDENTIALS_JSON }}
+        if: always()
 
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
-          python3 scripts/init.py && terraform init
-          terraform output -raw ${{ inputs.ssh_host_name }}
-          if [ -z "$terraform_output" ]; then
+          if [ -n "${{ inputs.ssh_host_ip }}" ]; then
             echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
           else
+            python3 scripts/init.py && terraform init
             echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
           fi
         shell: bash
