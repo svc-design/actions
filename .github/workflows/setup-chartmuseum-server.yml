@@ -24,9 +24,7 @@ on:
       SSH_USER:
         required: true
       ADMIN_PASSWORD:
-        required: false
-      GCP_CREDENTIALS_JSON:
-        required: false
+        required: true
 
 jobs:
   init-chartmuseum-server:
@@ -51,28 +49,13 @@ jobs:
           sudo apt-get install -y python3-pip jq
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.6.4
-
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
-        if: always()
-
+          
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
           if [ -n "${{ inputs.ssh_host_ip }}" ]; then
             echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
-          else
-            python3 scripts/init.py && terraform init
-            echo "SSH_HOST_IP=$(terraform-bin output -raw ${{ inputs.ssh_host_name }} 2>/dev/null)" >> $GITHUB_ENV
           fi
         shell: bash
-        working-directory: iac_modules/terraform/gcp/vhost/
 
       - name: Update playbook hosts
         run: |
