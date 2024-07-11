@@ -21,6 +21,8 @@ on:
         required: true
       SUDO_PASSWORD:
         required: true
+      ANSIBLE_VAULT_PASSWORD:
+        required: true
 
 jobs:
   init-vault-server:
@@ -31,6 +33,7 @@ jobs:
       SSH_HOST_IP: "${{ inputs.ssh_host_ip }}"
       SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
       SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
     
     steps:
@@ -45,6 +48,7 @@ jobs:
           sudo apt-get install -y python3-pip jq
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
+          echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" >> ~/.vault_password && sudo chmod 0644 ~/.vault_password
 
       - name: Extract SSH Host IP and Set as Env Variable
         run: |
@@ -58,7 +62,7 @@ jobs:
           bash scripts/ansible_playbook_hosts_setup.sh
         working-directory: ansible/
 
-      - name: Setup Chartmuseum Server
+      - name: Setup Vault Server
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
