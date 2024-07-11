@@ -19,6 +19,8 @@ on:
         required: true
       SSH_PRIVATE_KEY:
         required: true
+      SUDO_PASSWORD:
+        required: true
 
 jobs:
   init-vault-server:
@@ -27,6 +29,7 @@ jobs:
       DOMAIN: ${{ inputs.domain }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_HOST_IP: "${{ inputs.ssh_host_ip }}"
+      SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
     
@@ -43,13 +46,24 @@ jobs:
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
 
-      - name: Update playbook hosts
-        run: bash ansible_playbook_hosts_setup.sh
-        working-directory: playbook/ 
+      - name: Extract SSH Host IP and Set as Env Variable
+        run: |
+          if [ -n "${{ inputs.ssh_host_ip }}" ]; then
+            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
+          fi
+        shell: bash
 
-      - name: Setup Observability Agent
+      - name: Update playbook hosts
+        run: |
+          bash scripts/ansible_playbook_hosts_setup.sh
+        working-directory: ansible/
+
+      - name: Setup Chartmuseum Server
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init_vault_server -e "cluster_name=${{inputs.ssh_host_name}}" -e "domain=${{inputs.domain}}" -D
-        working-directory: playbook/ 
+          ansible-playbook -i hosts/inventory playbooks/init_vault           \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}" \
+                           -e "cluster_name=${{ inputs.ssh_host_name }}"     \
+                           -e "domain=${{ inputs.domain }}" -D
+        working-directory: ansible/
