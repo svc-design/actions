@@ -23,6 +23,10 @@ on:
         required: false
       ANSIBLE_VAULT_PASSWORD:
         required: true
+      VAULT_URL:
+        required: true
+      VAULT_TOKEN:
+        required: true
 
 jobs:
   renew-nodes-ssl-certs:
@@ -31,10 +35,12 @@ jobs:
       DOMAIN: ${{ inputs.domain }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_HOST_IP: "${{ inputs.ssh_host_ip }}"
+      SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
       SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
-      SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
+      VAULT_URL: ${{ secrets.VAULT_URL }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
     
     steps:
       - name: Checkout code
