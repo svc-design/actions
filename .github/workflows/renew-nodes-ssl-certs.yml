@@ -73,7 +73,9 @@ jobs:
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook -i hosts/inventory playbooks/renew_nodes_ssl_certs   \
-                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"    \
+                           -e "vault_url=${{ env.VAULT_URL }}"                  \
+                           -e "vault_token=${{ env.VAULT_TOKEN }}"              \
                            -e "cluster_name=${{ inputs.ssh_host_name }}"        \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"    \
                            -e "domain=${{ inputs.domain }}" -D
         working-directory: ansible/
