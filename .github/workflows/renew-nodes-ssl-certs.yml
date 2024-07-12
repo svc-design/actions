@@ -1,0 +1,73 @@
+name: Workflow Call Renew nodes ssl certs
+on:
+  workflow_call:
+    inputs:
+      domain:
+        required: true
+        type: string
+      cluster_name:
+        required: true
+        type: string
+      ssh_host_name:
+        required: true
+        type: string
+      ssh_host_ip:
+        required: true
+        type: string
+    secrets:
+      SSH_USER:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SUDO_PASSWORD:
+        required: false
+      ANSIBLE_VAULT_PASSWORD:
+        required: true
+
+jobs:
+  renew-nodes-ssl-certs:
+    runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ inputs.domain }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST_IP: "${{ inputs.ssh_host_ip }}"
+      SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Pre Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip jq
+          pip3 install ansible jinja2 hvac
+          ansible-galaxy collection install community.hashi_vault
+          echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" >> ~/.vault_password && sudo chmod 0644 ~/.vault_password
+
+      - name: Extract SSH Host IP and Set as Env Variable
+        run: |
+          if [ -n "${{ inputs.ssh_host_ip }}" ]; then
+            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Update playbook hosts
+        run: |
+          bash scripts/ansible_playbook_hosts_setup.sh
+        working-directory: ansible/
+
+      - name: Renew nodes ssl certs
+        shell: bash
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -i hosts/inventory playbooks/renew_nodes_ssl_certs   \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"    \
+                           -e "cluster_name=${{ inputs.ssh_host_name }}"        \
+                           -e "domain=${{ inputs.domain }}" -D
+        working-directory: ansible/
