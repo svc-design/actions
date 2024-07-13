@@ -1,0 +1,54 @@
+name: Check SSL Cert Expiry
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Domain to check SSL certificate for'
+        required: true
+        type: string
+
+jobs:
+  check-ssl-cert-expiry:
+    runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ github.event.inputs.domain }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Pre Setup
+        run: |
+          sudo apt-get update && sudo apt-get install -y openssl
+
+      - name: Check SSL Cert Expiry
+        run: |
+          set -x
+
+          DOMAIN=${{ github.event.inputs.domain }}
+          
+          # Fetch the certificate expiry date
+          expiry_date=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -dates | grep 'notAfter' | cut -d'=' -f2)
+
+          if [ -z "$expiry_date" ]; then
+            echo "Failed to fetch the certificate for $DOMAIN"
+            exit 1
+          fi
+
+          echo "Certificate for $DOMAIN expires on: $expiry_date"
+          
+          # Convert expiry date to seconds since epoch
+          expiry_date_epoch=$(date -d "$expiry_date" +%s)
+
+          # Get the current date in seconds since epoch
+          current_date_epoch=$(date +%s)
+
+          # Check if the certificate is expired
+          if [ "$current_date_epoch" -ge "$expiry_date_epoch" ]; then
+            echo "The certificate for $DOMAIN is expired."
+            exit 1
+          else
+            echo "The certificate for $DOMAIN is valid."
+          fi
