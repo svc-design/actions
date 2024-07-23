@@ -14,6 +14,9 @@ on:
       ssh_host_name:
         required: true
         type: string
+      ssh_host_domain:
+        required: false
+        type: string
     secrets:
       SSH_USER:
         required: true
@@ -34,8 +37,6 @@ jobs:
     env:
       DOMAIN: ${{ inputs.domain }}
       SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_HOST_IP: "${{ inputs.ssh_host_ip }}"
-      SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
     
@@ -53,10 +54,15 @@ jobs:
           ansible-galaxy collection install community.hashi_vault
           echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" >> ~/.vault_password && sudo chmod 0644 ~/.vault_password
 
-      - name: Extract SSH Host IP and Set as Env Variable
+      - name: Set Env Variable
         run: |
           if [ -n "${{ inputs.ssh_host_ip }}" ]; then
             echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
+          fi
+          if [ -n "${{ inputs.ssh_host_domain }}" ]; then
+            echo "SSH_HOST_DOMAIN=${{ inputs.ssh_host_domain }}" >> $GITHUB_ENV
+          else
+            echo "SSH_HOST_DOMAIN=${{ inputs.ssh_host_name }}.${{ inputs.domain }}" >> $GITHUB_ENV
           fi
         shell: bash
 
