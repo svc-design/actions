@@ -68,7 +68,7 @@ jobs:
 
       - name: Update playbook hosts
         run: |
-          bash ansible_playbook_hosts_setup.sh
+          bash scripts/ansible_playbook_hosts_setup.sh
         working-directory: ansible/ 
 
       - name: Setup Harbor Server 
