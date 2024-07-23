@@ -75,7 +75,7 @@ jobs:
         shell: bash
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts/inventory init-harbor-server       \
+          ansible-playbook -i hosts/inventory init_harbor_server       \
                            -e "backend_type=oss"                       \
                            -e "oss_ak=${{secrets.OSS_AK}}"             \
                            -e "oss_sk=${{secrets.OSS_SK}}"             \
