@@ -37,6 +37,7 @@ jobs:
     env:
       DOMAIN: ${{ inputs.domain }}
       SSH_USER: ${{ secrets.SSH_USER }}
+      SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
     
@@ -76,6 +77,7 @@ jobs:
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook -i hosts/inventory playbooks/init_harbor_server     \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}" \
                            -e "backend_type=oss"                               \
                            -e "oss_ak=${{secrets.OSS_AK}}"                     \
                            -e "oss_sk=${{secrets.OSS_SK}}"                     \
