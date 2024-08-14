@@ -45,10 +45,11 @@ jobs:
     env:
       DOMAIN: ${{ inputs.domain }}
       SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_HOST_NAME: ${{ inputs.ssh_host_name }}
       SSH_HOST_IP: ${{ inputs.ssh_host_ip }}
-      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      SSH_HOST_NAME: ${{ inputs.ssh_host_name }}
       SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
       GLOBAL_GATEWAY_PRIVATE_KEY: ${{ secrets.GLOBAL_GATEWAY_PRIVATE_KEY }}
       CN_GATEWAY_PUBLIC_KEY: ${{ secrets.CN_GATEWAY_PUBLIC_KEY }}
       DESKTOP_MACBOOK_PUBLIC_KEY: ${{ secrets.DESKTOP_MACBOOK_PUBLIC_KEY }}
