@@ -57,7 +57,8 @@ jobs:
       - name: Pre Setup
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip jq yq
+          sudo apt-get install -y python3-pip jq
+          sudo snap install yq
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
           echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_password && sudo chmod 0644 ~/.vault_password
