@@ -95,11 +95,11 @@ jobs:
               -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"                               \
               -e "cluster_name=${{inputs.ssh_host_name}}"                                     \
               -e "ansible_vault_password=${{ env.ANSIBLE_VAULT_PASSWORD }}"                   \
+              -e "localhost_private_key=${{ env.GLOBAL_GATEWAY_PRIVATE_KEY }}"                \
               -e 'host_keys={
-                "global_gateway_private_key": "${{ env.GLOBAL_GATEWAY_PRIVATE_KEY }}",
-                "global_k3s_server_public_key": "${{ env.CN_GATEWAY_PUBLIC_KEY }}",
-                "global_k3s_server_db_public_key": "${{ env.GLOBAL_K3S_SERVER_DB_PUBLIC_KEY }}",
+                "cn_gateway_public_key": "${{ env.CN_GATEWAY_PUBLIC_KEY }}",
                 "desktop_macbook_public_key": "${{ env.DESKTOP_MACBOOK_PUBLIC_KEY }}",
-                "cn_gateway_public_key": "${{ env.GLOBAL_K3S_SERVER_PUBLIC_KEY }}"
+                "global_k3s_server_public_key": "${{ env.GLOBAL_K3S_SERVER_PUBLIC_KEY }}",
+                "global_k3s_server_db_public_key": "${{ env.GLOBAL_K3S_SERVER_DB_PUBLIC_KEY }}"
               }'
         working-directory: ansible/
