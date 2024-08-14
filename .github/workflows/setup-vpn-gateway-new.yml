@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOMAIN: ${{ inputs.domain }}
+      CLUSTER_NAME: ${{ inputs.cluster_name }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_HOST_IP: ${{ inputs.ssh_host_ip }}
       SSH_HOST_NAME: ${{ inputs.ssh_host_name }}
