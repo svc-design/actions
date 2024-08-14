@@ -20,6 +20,14 @@ on:
         type: string  # 可以使用 string 类型传入 "true" 或 "false"
 
     secrets:
+      SSH_USER:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SUDO_PASSWORD:
+        required: true
+      ANSIBLE_VAULT_PASSWORD:
+        required: true
       GLOBAL_GATEWAY_PRIVATE_KEY:
         required: true
       CN_GATEWAY_PUBLIC_KEY:
