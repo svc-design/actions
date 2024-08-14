@@ -58,7 +58,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip jq
-          sudo snap install yq
+          #sudo snap install yq
+          VERSION=v4.34.1 # 选择所需版本
+          wget https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
           echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_password && sudo chmod 0644 ~/.vault_password
