@@ -38,8 +38,6 @@ on:
         required: true
       GLOBAL_K3S_SERVER_DB_PUBLIC_KEY:
         required: true
-      ANSIBLE_VAULT_PASSWORD:
-        required: true  # 添加这个行以标识 ANSIBLE_VAULT_PASSWORD 是必需的
 
 jobs:
   init-vpn-gateway:
@@ -48,7 +46,7 @@ jobs:
       DOMAIN: ${{ inputs.domain }}
       SSH_HOST_NAME: ${{ inputs.ssh_host_name }}
       SSH_HOST_IP: ${{ inputs.ssh_host_ip }}
-      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}  # 将 ANSIBLE_VAULT_PASSWORD 添加到环境变量中
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
       SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
       GLOBAL_GATEWAY_PRIVATE_KEY: ${{ secrets.GLOBAL_GATEWAY_PRIVATE_KEY }}
       CN_GATEWAY_PUBLIC_KEY: ${{ secrets.CN_GATEWAY_PUBLIC_KEY }}
@@ -88,7 +86,7 @@ jobs:
           export ANSIBLE_HOST_KEY_CHECKING=False
           ANSIBLE_OPTIONS=""
           if [ "${{ inputs.dry-run }}" == "true" ]; then
-            ANSIBLE_OPTIONS="-D -C"  # 添加 -D 和 -C 选项
+            ANSIBLE_OPTIONS="-D -C"
           fi
           ansible-playbook -i hosts/inventory playbooks/init_vpn_gateway.yml $ANSIBLE_OPTIONS \
                            -e "global_gateway_private_key=${{ env.GLOBAL_GATEWAY_PRIVATE_KEY }}" \
@@ -96,5 +94,5 @@ jobs:
                            -e "desktop_macbook_public_key=${{ env.DESKTOP_MACBOOK_PUBLIC_KEY }}" \
                            -e "global_k3s_server_public_key=${{ env.GLOBAL_K3S_SERVER_PUBLIC_KEY }}" \
                            -e "global_k3s_server_db_public_key=${{ env.GLOBAL_K3S_SERVER_DB_PUBLIC_KEY }}" \
-                           -e "ansible_vault_password=${{ env.ANSIBLE_VAULT_PASSWORD }}"  # 添加 vault 密码
+                           -e "ansible_vault_password=${{ env.ANSIBLE_VAULT_PASSWORD }}"
         working-directory: ansible/
