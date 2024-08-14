@@ -79,7 +79,7 @@ jobs:
 
       - name: Update playbook hosts
         run: |
-          python scripts/dynamic_inventory.py "vpn-gateway::${{ env.SSH_HOST_DOMAIN }}:${{ env.SSH_HOST_IP }}"
+          python scripts/dynamic_inventory.py "vpn-gateway:${{ env.SSH_HOST_DOMAIN }}:${{ env.SSH_HOST_IP }}"
         working-directory: ansible/
 
       - name: Setup VPN Gateway
