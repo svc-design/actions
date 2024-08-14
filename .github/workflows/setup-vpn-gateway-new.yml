@@ -58,10 +58,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip jq
-          #sudo snap install yq
-          VERSION=v4.34.1 # 选择所需版本
-          wget https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_linux_amd64 -O /usr/bin/yq
+          YQ_PATH=$(which yq)
+          if [ -n "$YQ_PATH" ]; then
+              sudo rm "$YQ_PATH"
+          fi
+          sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
+          yq --version
           pip3 install ansible jinja2 hvac
           ansible-galaxy collection install community.hashi_vault
           echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_password && sudo chmod 0644 ~/.vault_password
@@ -87,7 +90,7 @@ jobs:
             --arg domain "${{ inputs.domain }}" \
             --arg ansible_become_pass "${{ env.SUDO_PASSWORD }}" \
             --arg cluster_name "${{ inputs.cluster_name }}" \
-            --arg ansible_vault_password "${{ env.ANSIBLE_VAULT_PASSWORD }}" \
+            --arg ansible_vault_password "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" \
             --arg localhost_private_key "${{ env.GLOBAL_GATEWAY_PRIVATE_KEY }}" \
             '{
               "domain": $domain,
@@ -95,7 +98,9 @@ jobs:
               "cluster_name": $cluster_name,
               "ansible_vault_password": $ansible_vault_password,
               "gateway": {
-                "private_key": $GATEWAY_PRIVATE_KEY,
+                "private_key": {
+                  "value": $GATEWAY_PRIVATE_KEY
+                },
                 "public_config": $gateway_public_config
               }
             }' > extra_vars.yaml
