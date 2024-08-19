@@ -82,5 +82,9 @@ jobs:
           if [ "${{ inputs.dry-run }}" == "true" ]; then
             ANSIBLE_OPTIONS="-D -C"
           fi
-          ansible-playbook -i hosts/inventory playbooks/init_grafana_alloy $ANSIBLE_OPTIONS -e '@playbooks/roles/alloy/files/${{ inputs.loki_journal_sources }}'
+          ansible-playbook -i hosts/inventory playbooks/init_grafana_alloy $ANSIBLE_OPTIONS   \
+                           -e "domain=${{inputs.domain}}"                                     \
+                           -e "cluster_name=${{inputs.ssh_host_name}}"                        \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"                  \
+                           -e '@playbooks/roles/alloy/files/${{ inputs.loki_journal_sources }}'
         working-directory: ansible/
