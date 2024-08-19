@@ -1,0 +1,86 @@
+
+name: Workflow Call Setup VPN Gateway
+
+on:
+  workflow_call:
+    inputs:
+      domain:
+        required: true
+        type: string
+      cluster_name:
+        required: true
+        type: string
+      ssh_host_name:
+        required: true
+        type: string
+      ssh_host_ip:
+        required: false
+        type: string
+      loki_journal_sources:
+        required: true
+        type: string
+      dry-run:
+        required: true
+        type: string
+
+    secrets:
+      SSH_USER:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SUDO_PASSWORD:
+        required: true
+      ANSIBLE_VAULT_PASSWORD:
+        required: true
+
+jobs:
+  init-vpn-gateway:
+    runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ inputs.domain }}
+      CLUSTER_NAME: ${{ inputs.cluster_name }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST_IP: ${{ inputs.ssh_host_ip }}
+      SSH_HOST_NAME: ${{ inputs.ssh_host_name }}
+      SSH_HOST_DOMAIN: "${{ inputs.ssh_host_name }}.${{ inputs.domain }}"
+      SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Pre Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip jq
+          pip3 install ansible jinja2 hvac pyyaml
+          ansible-galaxy collection install community.hashi_vault
+          echo "${{ env.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_password && sudo chmod 0644 ~/.vault_password
+
+      - name: Extract SSH Host IP and Set as Env Variable
+        run: |
+          if [ -n "${{ inputs.ssh_host_ip }}" ]; then
+            echo "SSH_HOST_IP=${{ inputs.ssh_host_ip }}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Update playbook hosts
+        run: |
+          python scripts/dynamic_inventory.py "all:${{ env.SSH_HOST_DOMAIN }}:${{ env.SSH_HOST_IP }}"
+          cat hosts/inventory
+        working-directory: ansible/
+
+      - name: Setup Grafana Alloy
+        shell: bash
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ANSIBLE_OPTIONS=""
+          if [ "${{ inputs.dry-run }}" == "true" ]; then
+            ANSIBLE_OPTIONS="-D -C"
+          fi
+          ansible-playbook -i hosts/inventory playbooks/init_grafana_alloy $ANSIBLE_OPTIONS -e '@playbooks/roles/alloy/files/${{ inputs.loki_journal_sources }}'
+        working-directory: ansible/
