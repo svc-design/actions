@@ -17,6 +17,9 @@ on:
       ssh_host_domain:
         required: false
         type: string
+      registry:
+        required: false
+        type: string
     secrets:
       SSH_USER:
         required: true
@@ -36,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOMAIN: ${{ inputs.domain }}
+      REGISTRY: ${{ inputs.registry }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SUDO_PASSWORD: ${{ secrets.SUDO_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -77,10 +81,11 @@ jobs:
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook -i hosts/inventory playbooks/init_harbor_server     \
-                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}" \
+                           -e "ansible_become_pass=${{ env.SUDO_PASSWORD }}"   \
                            -e "backend_type=oss"                               \
                            -e "oss_ak=${{secrets.OSS_AK}}"                     \
                            -e "oss_sk=${{secrets.OSS_SK}}"                     \
                            -e "cluster_name=${{inputs.ssh_host_name}}"         \
+                           -e "registry=${{inputs.registry}}"                  \
                            -e "domain=${{inputs.domain}}" -D
         working-directory: ansible/
