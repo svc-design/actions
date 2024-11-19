@@ -92,8 +92,6 @@ jobs:
           TAG=$(git tag --contains HEAD | head -n 1)
           SHORT_COMMIT_ID=$(git rev-parse --short HEAD)
           BRANCH_NAME=$(git branch --show-current)
-          # 标准化分支名称：转换为小写，保留字母和数字，将其他字符替换为下划线
-          STANDARDIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
             # 如果是 main 分支，BUILD_TAG 为 latest
@@ -103,7 +101,7 @@ jobs:
             echo "BUILD_TAG=release-$SHORT_COMMIT_ID" >> $GITHUB_ENV
           else
             # 其他分支，BUILD_TAG 为 ${BRANCH_NAME}-${SHORT_COMMIT_ID}
-            echo "BUILD_TAG=${STANDARDIZED_BRANCH_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+            echo "BUILD_TAG=${BRANCH_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
           fi
 
       - name: Build & push images
