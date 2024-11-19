@@ -101,7 +101,7 @@ jobs:
             echo "BUILD_TAG=release-$SHORT_COMMIT_ID" >> $GITHUB_ENV
           else
             # 其他分支，BUILD_TAG 为 ${BRANCH_NAME}-${SHORT_COMMIT_ID}
-            echo "BUILD_TAG=${BRANCH_NAME}-${SHORT_COMMIT_ID}" >> $GITHUB_ENV
+            echo "BUILD_TAG=${SHORT_COMMIT_ID}" >> $GITHUB_ENV
           fi
 
       - name: Build & push images
